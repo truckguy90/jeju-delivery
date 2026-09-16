@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>배송 내비 원터치 복사기</title>
-    <!-- 모바일 웹앱 / PWA 설정 -->
+    <title>배송 내비 스마트 원터치 복사기</title>
+    <!-- 모바일 웹앱 / PWA 메타 태그 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#020617">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icon CDN -->
+    <!-- FontAwesome 아이콘 CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Leaflet 지도 라이브러리 CDN -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -33,7 +33,6 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-        /* 지도 컨테이너 크기 강제 지정 (검은 화면 방지) */
         #container-map {
             width: 100% !important;
             height: 100% !important;
@@ -45,7 +44,6 @@
             min-height: 100% !important;
             background-color: #0f172a;
         }
-        /* 지도 커스텀 숫자 핀 스타일 */
         .map-pin {
             display: flex;
             align-items: center;
@@ -67,7 +65,6 @@
             justify-content: center;
             border-radius: 8px;
             color: #ffffff;
-            background: #e11d48;
             font-weight: 900;
             font-size: 11px;
             border: 2px solid #ffffff;
@@ -79,35 +76,56 @@
 </head>
 <body class="text-slate-100 flex flex-col select-none">
 
-    <!-- 상단 고정 헤더 영역 -->
-    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 px-3 py-2.5 shadow-xl shrink-0">
+    <!-- 상단 고정 헤더 -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 px-3 py-2 shadow-xl shrink-0">
         <!-- 타이틀 바 -->
-        <div class="max-w-md mx-auto flex justify-between items-center mb-2">
+        <div class="max-w-md mx-auto flex justify-between items-center mb-1.5">
             <div>
-                <span class="text-[10px] font-bold text-sky-400 tracking-wider uppercase block">카카오내비 연동 도구</span>
+                <span class="text-[10px] font-bold text-sky-400 tracking-wider uppercase block">스마트 카카오내비 연동</span>
                 <h1 class="text-sm font-black text-white flex items-center gap-1.5">
-                    배송지 원터치 복사기
+                    배송지 순서 & 최적 경로 복사기
                 </h1>
             </div>
-            <!-- 전체 복사 버튼 -->
-            <button onclick="copyAllAddresses()" class="text-xs bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-bold px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 shadow">
-                <i class="fa-regular fa-copy text-xs"></i>
-                <span>전체 복사</span>
-            </button>
+            <div class="flex items-center gap-1.5">
+                <button onclick="openAddModal()" class="text-xs bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-bold px-2 py-1.5 rounded-xl border border-slate-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-plus text-[11px] text-sky-400"></i>
+                    <span>추가</span>
+                </button>
+                <button onclick="copyAllAddresses()" class="text-xs bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-bold px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 shadow">
+                    <i class="fa-regular fa-copy text-xs"></i>
+                    <span>전체 복사</span>
+                </button>
+            </div>
         </div>
 
-        <!-- 1. 오전 / 오후 탭 전환 (오전 우선) -->
-        <div class="max-w-md mx-auto grid grid-cols-2 gap-1.5 mb-2">
-            <button onclick="switchTab('am')" id="tab-am" class="py-2 rounded-xl text-xs font-bold transition bg-sky-600 text-white shadow">
-                16일 오전 (대정 우선)
+        <!-- 오전 / 오후 탭 전환 -->
+        <div class="max-w-md mx-auto grid grid-cols-2 gap-1.5 mb-1.5">
+            <button onclick="switchTab('am')" id="tab-am" class="py-1.5 rounded-xl text-xs font-bold transition bg-sky-600 text-white shadow">
+                16일 오전 코스
             </button>
-            <button onclick="switchTab('pm')" id="tab-pm" class="py-2 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400">
+            <button onclick="switchTab('pm')" id="tab-pm" class="py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400">
                 16일 오후 (번영로 마감)
             </button>
         </div>
 
-        <!-- 운행 지표 요약 바 (컴팩트 그리드) -->
-        <div class="max-w-md mx-auto bg-slate-950/90 border border-slate-800 rounded-xl p-2 grid grid-cols-4 gap-1 text-center text-xs">
+        <!-- ★ 첫 하차지 선택 & 자동 최적화 컨트롤러 바 -->
+        <div class="max-w-md mx-auto bg-slate-950 p-1.5 rounded-xl border border-sky-500/40 mb-1.5 flex items-center justify-between gap-1.5">
+            <div class="flex items-center gap-1 min-w-0 flex-1">
+                <span class="text-[10px] font-black text-amber-400 shrink-0 flex items-center gap-0.5">
+                    <i class="fa-solid fa-location-crosshairs"></i> 첫 하차지:
+                </span>
+                <select id="start-stop-select" onchange="onFirstStopSelected(this.value)" class="bg-slate-900 border border-slate-700 text-white font-bold text-xs rounded-lg px-2 py-1 w-full truncate focus:outline-none focus:border-sky-400">
+                    <!-- JS 동적 생성 -->
+                </select>
+            </div>
+            <button onclick="resetToDefaultRoute()" title="원래 표 순서로 초기화" class="shrink-0 text-[10px] bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-bold px-2 py-1 rounded-lg border border-slate-700 flex items-center gap-1">
+                <i class="fa-solid fa-rotate-left text-[9px]"></i>
+                <span>원래순서</span>
+            </button>
+        </div>
+
+        <!-- 운행 지표 요약 바 -->
+        <div class="max-w-md mx-auto bg-slate-950/90 border border-slate-800 rounded-xl p-1.5 grid grid-cols-4 gap-1 text-center text-xs">
             <div>
                 <span class="text-[9px] text-slate-400 block font-medium">총 주행</span>
                 <strong id="summary-dist" class="text-sky-400 font-mono font-bold text-xs">60.1 km</strong>
@@ -126,38 +144,38 @@
             </div>
         </div>
 
-        <!-- 목록 보기 / 지도 보기 원터치 뷰 모드 스위처 -->
-        <div class="max-w-md mx-auto mt-2 grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+        <!-- 뷰 모드 스위처 (목록 vs 지도) -->
+        <div class="max-w-md mx-auto mt-1.5 grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
             <button onclick="switchView('list')" id="view-btn-list" class="py-1 rounded-lg text-xs font-bold transition bg-sky-600 text-white flex items-center justify-center gap-1">
-                <i class="fa-solid fa-list-check text-[11px]"></i>
-                <span>목록 모드 (초압축)</span>
+                <i class="fa-solid fa-list-ol text-[11px]"></i>
+                <span>목록 순서 편집 모드</span>
             </button>
             <button onclick="switchView('map')" id="view-btn-map" class="py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1">
                 <i class="fa-solid fa-map-location-dot text-[11px]"></i>
-                <span>지도 모드 (실시간)</span>
+                <span>지도 실시간 모드</span>
             </button>
         </div>
     </header>
 
-    <!-- 복사 알림 토스트 (모바일 플로팅) -->
-    <div id="toast" class="fixed top-28 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-2xl flex items-center gap-1.5 opacity-0 pointer-events-none transition-opacity duration-200">
+    <!-- 플로팅 알림 토스트 -->
+    <div id="toast" class="fixed top-36 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-2xl flex items-center gap-1.5 opacity-0 pointer-events-none transition-opacity duration-200">
         <i class="fa-solid fa-check text-xs"></i>
         <span id="toast-text">복사되었습니다.</span>
     </div>
 
-    <!-- 메인 컨텐츠 영역 (높이 100% 채움) -->
+    <!-- 메인 컨텐츠 영역 -->
     <main class="flex-1 max-w-md w-full mx-auto relative overflow-hidden flex flex-col min-h-0">
         
-        <!-- 1. 초압축 목록 뷰 -->
-        <div id="container-list" class="flex-1 w-full h-full p-2.5 space-y-2 overflow-y-auto pb-24">
-            <!-- JS 동적 생성 -->
+        <!-- 1. 초압축 목록 뷰 (순서 변경 및 수동 조정 지원) -->
+        <div id="container-list" class="flex-1 w-full h-full p-2.5 space-y-2 overflow-y-auto pb-28">
+            <!-- JS로 동적 렌더링 -->
         </div>
 
-        <!-- 2. 인터랙티브 지도 뷰 (잘림 및 검은 화면 완전 방지) -->
+        <!-- 2. 인터랙티브 지도 뷰 -->
         <div id="container-map" class="w-full h-full relative hidden">
             <div id="map"></div>
             
-            <!-- 지도 위 플로팅 선택 배송지 퀵 카드 (하단 고정) -->
+            <!-- 지도 위 플로팅 퀵 카드 -->
             <div id="map-quick-card" class="absolute bottom-4 left-3 right-3 bg-slate-900/95 backdrop-blur-md border border-slate-700/90 rounded-2xl p-3 shadow-2xl z-[1000] space-y-2">
                 <div class="flex justify-between items-start">
                     <div class="flex items-center gap-2 min-w-0 flex-1 pr-2">
@@ -169,7 +187,6 @@
                     </div>
                     <span id="mq-time" class="text-xs font-mono font-bold text-sky-400 bg-slate-800 px-2 py-0.5 rounded shrink-0">00:00 도착</span>
                 </div>
-                <!-- 퀵 복사 액션 버튼 -->
                 <div class="grid grid-cols-3 gap-1.5 pt-1">
                     <button id="mq-btn-title" class="bg-slate-800 active:scale-95 py-1.5 rounded-lg text-xs font-bold text-sky-300 border border-slate-700">
                         타이틀 복사
@@ -187,190 +204,638 @@
 
     </main>
 
+    <!-- 배송지 추가 / 수정 모달 팝업 -->
+    <div id="modal-edit" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <h3 id="modal-title" class="font-bold text-sm text-white">새 배송지 추가</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-base">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-2 text-xs">
+                <div>
+                    <label class="text-[10px] text-slate-400 block mb-1">배송처명 / 고객명</label>
+                    <input type="text" id="input-name" placeholder="예: 안덕신협" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-400 block mb-1">도로명 주소 (내비 검색용)</label>
+                    <input type="text" id="input-address" placeholder="예: 서귀포시 안덕면 화순로 95" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-amber-300 font-mono focus:outline-none focus:border-sky-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">박스 수량</label>
+                        <input type="text" id="input-qty" placeholder="예: 29박스" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">연락처</label>
+                        <input type="text" id="input-phone" placeholder="010-0000-0000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-sky-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-400 block mb-1">참고 사항 / 메모</label>
+                    <input type="text" id="input-note" placeholder="예: 본점 주차장 하차" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-sky-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800">
+                <button onclick="closeModal()" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition">
+                    취소
+                </button>
+                <button onclick="saveModalStop()" class="py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition shadow">
+                    저장하기
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // 16일 오전 데이터 (대정 우선 -> 이마트 서귀포점 복귀)
-        const AM_DATA = [
-            {
-                seq: 1,
-                name: "이홍주",
-                address: "서귀포시 대정읍 상모로 14",
-                phone: "010-8598-5327",
-                boxQty: "35박스",
-                goods: "동원 프리미엄 60호 (35)",
-                note: "최남단 현대주유소 앞",
-                arrTime: "10:01",
-                lat: 33.2185,
-                lon: 126.2555
-            },
-            {
-                seq: 2,
-                name: "안덕신협",
-                address: "서귀포시 안덕면 화순로 95",
-                phone: "064-794-2201",
-                boxQty: "29박스",
-                goods: "청정원 S50호 (29)",
-                note: "화순사거리 신협 본점",
-                arrTime: "10:20",
-                lat: 33.2458,
-                lon: 126.3353
-            },
-            {
-                seq: 3,
-                name: "이진영",
-                address: "서귀포시 안덕면 중산간서로 1610",
-                phone: "010-8660-5200",
-                boxQty: "100박스",
-                goods: "동원참치 S15 (93), 올리브 (4) 등 100박스",
-                note: "세계자동차박물관 하차 구역",
-                arrTime: "10:39",
-                lat: 33.3039,
-                lon: 126.3495
-            },
-            {
-                seq: 4,
-                name: "권동재",
-                address: "서귀포시 중문상로 82번길 45",
-                phone: "010-5179-5611",
-                boxQty: "16박스",
-                goods: "동원 참치/리챔(10), 잔슨빌(2), 땅콩버터(4)",
-                note: "103동 104호 (도로명 주소만 복사)",
-                arrTime: "11:07",
-                lat: 33.2562,
-                lon: 126.4312
-            },
-            {
-                seq: 5,
-                name: "최상희",
-                address: "서귀포시 대청로 12",
-                phone: "010-6303-0276",
-                boxQty: "15박스",
-                goods: "사과&배 혼합 SET (10), 녹차원 베스트 (5)",
-                note: "106동 201호 (혁신도시 LH아파트)",
-                arrTime: "11:24",
-                lat: 33.2535,
-                lon: 126.5165
-            },
-            {
-                seq: 6,
-                name: "이마트 서귀포점",
-                address: "서귀포시 일주동로 9209",
-                phone: "064-797-1234",
-                boxQty: "복귀",
-                goods: "오전 운행 최종 마감",
-                note: "월드컵경기장 옆 이마트 복귀",
-                arrTime: "11:32",
-                lat: 33.2471,
-                lon: 126.5098
-            }
+        // 거점 정보
+        const HUB_EMART = { name: "이마트 서귀포점", address: "서귀포시 일주동로 9209", lat: 33.2471, lon: 126.5098 };
+        const HUB_BYEONYEONG = { name: "번영로 528", address: "제주시 번영로 528", lat: 33.4988, lon: 126.6022 };
+
+        // 16일 오전 기본 데이터 원본
+        const DEFAULT_AM_DATA = [
+            { id: "am_1", name: "이홍주", address: "서귀포시 대정읍 상모로 14", phone: "010-8598-5327", boxQty: "35박스", note: "최남단 현대주유소 앞", lat: 33.2185, lon: 126.2555, unloadMin: 6 },
+            { id: "am_2", name: "안덕신협", address: "서귀포시 안덕면 화순로 95", phone: "064-794-2201", boxQty: "29박스", note: "화순사거리 신협 본점", lat: 33.2458, lon: 126.3353, unloadMin: 5 },
+            { id: "am_3", name: "이진영", address: "서귀포시 안덕면 중산간서로 1610", phone: "010-8660-5200", boxQty: "100박스", note: "세계자동차박물관 하차 구역", lat: 33.3039, lon: 126.3495, unloadMin: 12 },
+            { id: "am_4", name: "권동재", address: "서귀포시 중문상로 82번길 45", phone: "010-5179-5611", boxQty: "16박스", note: "103동 104호 (도로명 주소만 복사)", lat: 33.2562, lon: 126.4312, unloadMin: 5 },
+            { id: "am_5", name: "최상희", address: "서귀포시 대청로 12", phone: "010-6303-0276", boxQty: "15박스", note: "106동 201호 (혁신도시 LH아파트)", lat: 33.2535, lon: 126.5165, unloadMin: 5 }
         ];
 
-        // 16일 오후 데이터 (이마트 -> 서귀포 시내 -> 스프링데일 -> 제주시 번영로 528 마감)
-        const PM_DATA = [
-            {
-                seq: 1,
-                name: "삼화페인트",
-                address: "서귀포시 일주동로 8701",
-                phone: "010-5413-1048",
-                boxQty: "30박스",
-                goods: "대상 청정원 스페셜 S (30)",
-                note: "도로변 매장 앞",
-                arrTime: "13:38",
-                lat: 33.2494,
-                lon: 126.5512
-            },
-            {
-                seq: 2,
-                name: "형남종합건설",
-                address: "서귀포시 동홍동로 39",
-                phone: "010-5395-2050",
-                boxQty: "23박스",
-                goods: "동원 튜나리챔 S호 (23)",
-                note: "2층 사무실",
-                arrTime: "13:50",
-                lat: 33.2572,
-                lon: 126.5741
-            },
-            {
-                seq: 3,
-                name: "영농철강",
-                address: "서귀포시 516로 55-4",
-                phone: "010-5066-9728",
-                boxQty: "47박스",
-                goods: "CJ 복합 T-2호 (40), 동원 (2), 엘지 (5)",
-                note: "비석거리 북측 사업장",
-                arrTime: "13:59",
-                lat: 33.2625,
-                lon: 126.5823
-            },
-            {
-                seq: 4,
-                name: "새한공조",
-                address: "서귀포시 일주동로 8383",
-                phone: "010-5659-7036",
-                boxQty: "67박스",
-                goods: "정관장 홍삼원골드 60포 (67)",
-                note: "일주동로변 공조 매장",
-                arrTime: "14:14",
-                lat: 33.2655,
-                lon: 126.5992
-            },
-            {
-                seq: 5,
-                name: "동남산업",
-                address: "서귀포시 토평공단로 106번길 18",
-                phone: "010-5395-2050",
-                boxQty: "27박스",
-                goods: "튜나리챔(16), 참치(2), 락토핏(6), 올리브(3)",
-                note: "토평공단 내 공장",
-                arrTime: "14:29",
-                lat: 33.2778,
-                lon: 126.5985
-            },
-            {
-                seq: 6,
-                name: "삼다감귤영농조합",
-                address: "서귀포시 효돈순환로 296",
-                phone: "010-7203-1981",
-                boxQty: "45박스",
-                goods: "청정원 종합 3호 (33), 표고혼합 (12)",
-                note: "효돈순환로 사업장",
-                arrTime: "14:44",
-                lat: 33.2682,
-                lon: 126.6185
-            },
-            {
-                seq: 7,
-                name: "스프링데일",
-                address: "서귀포시 남원읍 서성로 159",
-                phone: "010-7153-2848",
-                boxQty: "123박스",
-                goods: "CJ 스팸 EM호 (123)",
-                note: "골프장 클럽하우스 (장명학 / 대량)",
-                arrTime: "15:11",
-                lat: 33.3255,
-                lon: 126.6715
-            },
-            {
-                seq: 8,
-                name: "번영로 528",
-                address: "제주시 번영로 528",
-                phone: "",
-                boxQty: "마감",
-                goods: "오후 운행 최종 종료",
-                note: "제주시 봉개동 제주봉개LH아파트",
-                arrTime: "15:58",
-                lat: 33.4988,
-                lon: 126.6022
-            }
+        // 16일 오후 기본 데이터 원본
+        const DEFAULT_PM_DATA = [
+            { id: "pm_1", name: "삼화페인트", address: "서귀포시 일주동로 8701", phone: "010-5413-1048", boxQty: "30박스", note: "도로변 매장 앞", lat: 33.2494, lon: 126.5512, unloadMin: 5 },
+            { id: "pm_2", name: "형남종합건설", address: "서귀포시 동홍동로 39", phone: "010-5395-2050", boxQty: "23박스", note: "2층 사무실", lat: 33.2572, lon: 126.5741, unloadMin: 5 },
+            { id: "pm_3", name: "영농철강", address: "서귀포시 516로 55-4", phone: "010-5066-9728", boxQty: "47박스", note: "비석거리 북측 사업장", lat: 33.2625, lon: 126.5823, unloadMin: 8 },
+            { id: "pm_4", name: "새한공조", address: "서귀포시 일주동로 8383", phone: "010-5659-7036", boxQty: "67박스", note: "일주동로변 공조 매장", lat: 33.2655, lon: 126.5992, unloadMin: 9 },
+            { id: "pm_5", name: "동남산업", address: "서귀포시 토평공단로 106번길 18", phone: "010-5395-2050", boxQty: "27박스", note: "토평공단 내 공장", lat: 33.2778, lon: 126.5985, unloadMin: 6 },
+            { id: "pm_6", name: "삼다감귤영농조합", address: "서귀포시 효돈순환로 296", phone: "010-7203-1981", boxQty: "45박스", note: "효돈순환로 사업장", lat: 33.2682, lon: 126.6185, unloadMin: 8 },
+            { id: "pm_7", name: "스프링데일", address: "서귀포시 남원읍 서성로 159", phone: "010-7153-2848", boxQty: "123박스", note: "골프장 클럽하우스 (장명학 / 대량)", lat: 33.3255, lon: 126.6715, unloadMin: 15 }
         ];
 
-        // 앱 상태
+        // 런타임 편집 가능 작업 리스트
+        let currentStops = JSON.parse(JSON.stringify(DEFAULT_AM_DATA));
         let currentTab = 'am';
         let currentView = 'list';
         let completedMap = {};
+        let editingStopId = null;
+
+        // 지도 인스턴스
         let mapInstance = null;
         let markersLayer = null;
         let routeLine = null;
+
+        // 거리 계산 함수 (Haversine 공식, km 단위)
+        function calcDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // ★ 핵심 알고리즘: 첫 하차지 고정 최적 경로(TSP) 자동 계산기
+        // 특정 하차지가 1번으로 선택되었을 때, 나머지 방문지들을 최단거리로 순회하는 최적 순서를 탐색
+        function optimizeRouteWithFirstStop(firstStopId) {
+            const firstStopIndex = currentStops.findIndex(s => s.id === firstStopId);
+            if (firstStopIndex === -1) return;
+
+            const firstStop = currentStops[firstStopIndex];
+            const remaining = currentStops.filter(s => s.id !== firstStopId);
+
+            const startHub = HUB_EMART;
+            const endHub = currentTab === 'am' ? HUB_EMART : HUB_BYEONYEONG;
+
+            // 작은 N(5~8개)에 대한 완벽 최적 순열 탐색 (Exact TSP Brute-Force)
+            let bestOrder = null;
+            let minDistance = Infinity;
+
+            function permute(arr, memo = []) {
+                if (arr.length === 0) {
+                    // 전체 경로 거리 측정: Hub -> First -> memo[...] -> EndHub
+                    let dist = calcDistance(startHub.lat, startHub.lon, firstStop.lat, firstStop.lon);
+                    let prev = firstStop;
+
+                    for (let i = 0; i < memo.length; i++) {
+                        dist += calcDistance(prev.lat, prev.lon, memo[i].lat, memo[i].lon);
+                        prev = memo[i];
+                    }
+                    dist += calcDistance(prev.lat, prev.lon, endHub.lat, endHub.lon);
+
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        bestOrder = [firstStop, ...memo];
+                    }
+                    return;
+                }
+                for (let i = 0; i < arr.length; i++) {
+                    const curr = arr.slice();
+                    const next = curr.splice(i, 1);
+                    permute(curr.slice(), memo.concat(next));
+                }
+            }
+
+            // 순열 계산 실행
+            permute(remaining);
+
+            if (bestOrder) {
+                currentStops = bestOrder;
+                renderAll();
+                showToast(`[${firstStop.name}] 1번 기준 최적 경로로 자동 재배열되었습니다!`);
+            }
+        }
+
+        // 첫 하차지 드롭다운 선택 이벤트
+        function onFirstStopSelected(selectedId) {
+            if (!selectedId) return;
+            optimizeRouteWithFirstStop(selectedId);
+        }
+
+        // 특정 카드를 바로 1번으로 올리고 최적화 실행
+        function setAsFirstStop(stopId) {
+            optimizeRouteWithFirstStop(stopId);
+        }
+
+        // 타임라인 및 주행거리 재계산
+        function recalculateSchedule() {
+            const startHour = currentTab === 'am' ? 9 : 13;
+            const startMin = currentTab === 'am' ? 30 : 30;
+            let currentMinutes = startHour * 60 + startMin;
+
+            const startHub = HUB_EMART;
+            let prevPoint = { lat: startHub.lat, lon: startHub.lon };
+            let totalKm = 0;
+            let totalBoxes = 0;
+
+            currentStops.forEach((stop, idx) => {
+                const dist = calcDistance(prevPoint.lat, prevPoint.lon, stop.lat, stop.lon);
+                // 실도로 보정계수 1.32 적용
+                const roadDist = dist * 1.32;
+                totalKm += roadDist;
+
+                // 평균 주행속도 45km/h 기준 주행 분 계산
+                const driveMin = Math.max(3, Math.round((roadDist / 45) * 60));
+                currentMinutes += driveMin;
+
+                const h = Math.floor(currentMinutes / 60) % 24;
+                const m = currentMinutes % 60;
+                stop.arrTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                stop.seq = idx + 1;
+
+                // 하차 소요시간 반영
+                currentMinutes += (stop.unloadMin || 6);
+                prevPoint = { lat: stop.lat, lon: stop.lon };
+
+                // 박스 합산
+                const qtyNum = parseInt(stop.boxQty) || 0;
+                totalBoxes += qtyNum;
+            });
+
+            // 최종 목적지 복귀 구간 계산
+            const endHub = currentTab === 'am' ? HUB_EMART : HUB_BYEONYEONG;
+            const finalDist = calcDistance(prevPoint.lat, prevPoint.lon, endHub.lat, endHub.lon) * 1.32;
+            totalKm += finalDist;
+            const finalDriveMin = Math.max(4, Math.round((finalDist / 45) * 60));
+            currentMinutes += finalDriveMin;
+
+            const finH = Math.floor(currentMinutes / 60) % 24;
+            const finM = currentMinutes % 60;
+            const finishTimeStr = `${String(finH).padStart(2, '0')}:${String(finM).padStart(2, '0')}`;
+
+            // 요약 헤더 갱신
+            document.getElementById('summary-dist').innerText = `${totalKm.toFixed(1)} km`;
+            document.getElementById('summary-qty').innerText = `${totalBoxes} 박스`;
+            document.getElementById('summary-finish').innerText = finishTimeStr;
+
+            updateProgress();
+        }
+
+        // 카드 렌더링 (순서 이동 버튼 및 1번 지정 버튼 포함)
+        function renderCards() {
+            const container = document.getElementById('container-list');
+            let html = '';
+
+            currentStops.forEach((item, index) => {
+                const uniqueKey = `${currentTab}_${item.id}`;
+                const isDone = !!completedMap[uniqueKey];
+                const isFirst = index === 0;
+                const isLast = index === currentStops.length - 1;
+                const titleStr = `${item.seq} ${item.name}`;
+
+                html += `
+                    <div class="border rounded-xl p-2.5 transition duration-150 ${
+                        isDone 
+                            ? 'bg-slate-900/40 border-slate-800 opacity-60' 
+                            : isFirst
+                                ? 'bg-slate-900 border-amber-500/70 shadow-lg ring-1 ring-amber-500/30'
+                                : 'bg-slate-900 border-slate-800 shadow-sm'
+                    }">
+                        <!-- 1줄: 순번, 타이틀, 박스수량, 도착시간, 순서조정 버튼 -->
+                        <div class="flex justify-between items-center mb-1.5">
+                            <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                                <span class="w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
+                                    isDone 
+                                        ? 'bg-emerald-500 text-slate-950' 
+                                        : isFirst ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300' : 'bg-sky-500 text-slate-950'
+                                }">
+                                    ${isDone ? '<i class="fa-solid fa-check text-[10px]"></i>' : item.seq}
+                                </span>
+                                <h2 class="font-bold text-xs truncate ${isDone ? 'line-through text-slate-400' : 'text-white'}">
+                                    ${titleStr}
+                                </h2>
+                                <span class="text-[10px] text-amber-300 font-mono font-bold shrink-0">(${item.boxQty})</span>
+                            </div>
+
+                            <!-- 우측: 수동 위/아래 이동 및 하차완료 체크 -->
+                            <div class="flex items-center gap-1 shrink-0">
+                                <span class="font-mono text-[11px] font-bold text-sky-400 mr-1">${item.arrTime}</span>
+                                <div class="flex items-center bg-slate-950 rounded border border-slate-800 p-0.5">
+                                    <button onclick="moveStop(${index}, -1)" ${isFirst ? 'disabled class="opacity-20 px-1 text-slate-500"' : 'class="px-1 text-sky-300 active:scale-125 transition"'} title="위로">
+                                        <i class="fa-solid fa-arrow-up text-[9px]"></i>
+                                    </button>
+                                    <button onclick="moveStop(${index}, 1)" ${isLast ? 'disabled class="opacity-20 px-1 text-slate-500"' : 'class="px-1 text-sky-300 active:scale-125 transition"'} title="아래로">
+                                        <i class="fa-solid fa-arrow-down text-[9px]"></i>
+                                    </button>
+                                </div>
+                                <button onclick="toggleComplete('${uniqueKey}')" class="text-[10px] px-1.5 py-0.5 rounded border ${
+                                    isDone 
+                                        ? 'bg-emerald-950 border-emerald-500/40 text-emerald-300 font-bold' 
+                                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
+                                }">
+                                    ${isDone ? '완료' : '미완료'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2줄: 내비 주소 + 원터치 복사 버튼 -->
+                        <div class="bg-slate-950/80 rounded-lg p-1.5 mb-1.5 flex items-center justify-between gap-1.5 border border-slate-800">
+                            <span class="text-xs font-mono font-bold text-amber-300 truncate pl-1">
+                                ${item.address}
+                            </span>
+                            <button onclick="copyText('${item.address}', '주소')" class="shrink-0 bg-sky-600 hover:bg-sky-500 active:scale-95 px-2.5 py-1 rounded-md text-xs font-bold text-white shadow flex items-center gap-1">
+                                <i class="fa-solid fa-location-arrow text-[10px]"></i>
+                                <span>주소 복사</span>
+                            </button>
+                        </div>
+
+                        <!-- 3줄: 퀵 액션 (1번 스타트 지정 + 타이틀 복사 + 전화번호 + 통화 + 편집) -->
+                        <div class="flex items-center justify-between gap-1 text-[10px]">
+                            <div class="truncate text-slate-400 flex-1 pr-1">
+                                <i class="fa-solid fa-info-circle text-sky-400 mr-0.5"></i>
+                                <span>${item.note}</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-1 shrink-0">
+                                ${!isFirst ? `
+                                    <button onclick="setAsFirstStop('${item.id}')" class="bg-amber-950/80 hover:bg-amber-900 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-amber-300 border border-amber-500/50 flex items-center gap-0.5">
+                                        <i class="fa-solid fa-play text-[8px]"></i>
+                                        <span>1번 시작</span>
+                                    </button>
+                                ` : `
+                                    <span class="bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded text-[9px] font-bold border border-amber-500/30">
+                                        시작점
+                                    </span>
+                                `}
+                                <button onclick="copyText('${titleStr}', '타이틀')" class="bg-slate-800 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-sky-300 border border-slate-700">
+                                    타이틀
+                                </button>
+                                ${item.phone ? `
+                                    <a href="tel:${item.phone}" class="bg-emerald-700 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-white shadow flex items-center gap-0.5">
+                                        <i class="fa-solid fa-phone text-[8px]"></i>
+                                        <span>통화</span>
+                                    </a>
+                                ` : ''}
+                                <button onclick="openEditModal('${item.id}')" class="bg-slate-800 active:scale-95 px-1.5 py-1 rounded text-slate-400 hover:text-white border border-slate-700" title="수정">
+                                    <i class="fa-solid fa-pen text-[9px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // 최종 복귀/마감 거점 카드
+            const endHub = currentTab === 'am' ? HUB_EMART : HUB_BYEONYEONG;
+            const endTitle = currentTab === 'am' ? `${currentStops.length + 1} 이마트 서귀포점 (오전 마감 복귀)` : `${currentStops.length + 1} 번영로 528 (오후 최종 마감)`;
+            html += `
+                <div class="border border-slate-800 bg-slate-950/90 rounded-xl p-2.5 text-xs text-slate-400 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 font-bold text-[10px] flex items-center justify-center">종</span>
+                        <div>
+                            <span class="font-bold text-white block">${endTitle}</span>
+                            <span class="text-[10px] text-amber-400 font-mono">${endHub.address}</span>
+                        </div>
+                    </div>
+                    <button onclick="copyText('${endHub.address}', '종점 주소')" class="bg-slate-800 hover:bg-slate-700 active:scale-95 px-2.5 py-1 rounded text-slate-300 font-bold text-xs border border-slate-700">
+                        주소 복사
+                    </button>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // 수동으로 한 칸 위/아래 순서 변경
+        function moveStop(index, delta) {
+            const newIndex = index + delta;
+            if (newIndex < 0 || newIndex >= currentStops.length) return;
+            
+            const temp = currentStops[index];
+            currentStops[index] = currentStops[newIndex];
+            currentStops[newIndex] = temp;
+
+            renderAll();
+            showToast("배송지 순서가 변경되었습니다.");
+        }
+
+        // 첫 하차지 드롭다운 목록 동기화
+        function updateStartStopDropdown() {
+            const select = document.getElementById('start-stop-select');
+            let html = '';
+            currentStops.forEach((item, idx) => {
+                html += `<option value="${item.id}" ${idx === 0 ? 'selected' : ''}>${idx + 1}. ${item.name} (${item.boxQty})</option>`;
+            });
+            select.innerHTML = html;
+        }
+
+        // 전체 렌더링 파이프라인
+        function renderAll() {
+            recalculateSchedule();
+            updateStartStopDropdown();
+            renderCards();
+            if (currentView === 'map') {
+                renderMap();
+            }
+        }
+
+        // 원래 표 순서로 리셋
+        function resetToDefaultRoute() {
+            currentStops = JSON.parse(JSON.stringify(currentTab === 'am' ? DEFAULT_AM_DATA : DEFAULT_PM_DATA));
+            renderAll();
+            showToast("원래 배송 목록 순서로 초기화되었습니다.");
+        }
+
+        // 탭 전환 (오전 / 오후)
+        function switchTab(tabKey) {
+            currentTab = tabKey;
+            const btnAm = document.getElementById('tab-am');
+            const btnPm = document.getElementById('tab-pm');
+
+            if (tabKey === 'am') {
+                btnAm.className = "py-1.5 rounded-xl text-xs font-bold transition bg-sky-600 text-white shadow";
+                btnPm.className = "py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400";
+                currentStops = JSON.parse(JSON.stringify(DEFAULT_AM_DATA));
+            } else {
+                btnPm.className = "py-1.5 rounded-xl text-xs font-bold transition bg-sky-600 text-white shadow";
+                btnAm.className = "py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400";
+                currentStops = JSON.parse(JSON.stringify(DEFAULT_PM_DATA));
+            }
+
+            renderAll();
+        }
+
+        // 뷰 모드 전환 (목록 / 지도)
+        function switchView(viewKey) {
+            currentView = viewKey;
+            const btnList = document.getElementById('view-btn-list');
+            const btnMap = document.getElementById('view-btn-map');
+            const cList = document.getElementById('container-list');
+            const cMap = document.getElementById('container-map');
+
+            if (viewKey === 'list') {
+                btnList.className = "py-1 rounded-lg text-xs font-bold transition bg-sky-600 text-white flex items-center justify-center gap-1";
+                btnMap.className = "py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1";
+                cList.classList.remove('hidden');
+                cMap.classList.add('hidden');
+            } else {
+                btnMap.className = "py-1 rounded-lg text-xs font-bold transition bg-sky-600 text-white flex items-center justify-center gap-1";
+                btnList.className = "py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1";
+                cList.classList.add('hidden');
+                cMap.classList.remove('hidden');
+
+                requestAnimationFrame(() => {
+                    renderMap();
+                    setTimeout(() => {
+                        if (mapInstance) {
+                            mapInstance.invalidateSize(true);
+                            if (routeLine) {
+                                mapInstance.fitBounds(routeLine.getBounds(), { padding: [35, 35] });
+                            }
+                        }
+                    }, 80);
+                });
+            }
+        }
+
+        // Leaflet 지도 렌더링
+        function renderMap() {
+            const mapEl = document.getElementById('map');
+            if (!mapEl) return;
+
+            if (!mapInstance) {
+                mapInstance = L.map('map', { 
+                    zoomControl: false,
+                    attributionControl: false 
+                }).setView([33.25, 126.40], 11);
+
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19
+                }).addTo(mapInstance);
+
+                markersLayer = L.layerGroup().addTo(mapInstance);
+            }
+
+            markersLayer.clearLayers();
+            if (routeLine) {
+                mapInstance.removeLayer(routeLine);
+            }
+
+            const latlngs = [];
+
+            // 이마트 출발점 핀
+            latlngs.push([HUB_EMART.lat, HUB_EMART.lon]);
+            L.marker([HUB_EMART.lat, HUB_EMART.lon], {
+                icon: L.divIcon({
+                    className: 'hub-pin-icon',
+                    html: `<div class="hub-pin" style="background:#0284c7;">출발: 이마트</div>`,
+                    iconSize: [84, 24],
+                    iconAnchor: [42, 12]
+                })
+            }).addTo(markersLayer);
+
+            // 순차 배송지 핀
+            currentStops.forEach(item => {
+                const pt = [item.lat, item.lon];
+                latlngs.push(pt);
+
+                const uniqueKey = `${currentTab}_${item.id}`;
+                const isDone = !!completedMap[uniqueKey];
+                const isFirst = item.seq === 1;
+                const pinColor = isDone ? '#10b981' : (isFirst ? '#f59e0b' : '#0ea5e9');
+
+                const marker = L.marker(pt, {
+                    icon: L.divIcon({
+                        className: 'custom-pin-icon',
+                        html: `<div class="map-pin" style="background-color: ${pinColor}; width: 28px; height: 28px;">${isDone ? '✓' : item.seq}</div>`,
+                        iconSize: [28, 28],
+                        iconAnchor: [14, 14]
+                    })
+                }).addTo(markersLayer);
+
+                marker.on('click', () => {
+                    updateMapQuickCard(item);
+                });
+            });
+
+            // 최종 도착지 핀 (오전: 이마트 복귀, 오후: 번영로 528)
+            const endHub = currentTab === 'am' ? HUB_EMART : HUB_BYEONYEONG;
+            latlngs.push([endHub.lat, endHub.lon]);
+            if (currentTab === 'pm') {
+                L.marker([endHub.lat, endHub.lon], {
+                    icon: L.divIcon({
+                        className: 'hub-pin-icon',
+                        html: `<div class="hub-pin" style="background:#e11d48;">종점: 번영로 528</div>`,
+                        iconSize: [100, 24],
+                        iconAnchor: [50, 12]
+                    })
+                }).addTo(markersLayer);
+            }
+
+            routeLine = L.polyline(latlngs, {
+                color: currentTab === 'am' ? '#0ea5e9' : '#38bdf8',
+                weight: 4,
+                opacity: 0.85,
+                dashArray: '6, 6'
+            }).addTo(mapInstance);
+
+            setTimeout(() => {
+                mapInstance.invalidateSize(true);
+                mapInstance.fitBounds(routeLine.getBounds(), { padding: [35, 35] });
+            }, 60);
+
+            if (currentStops.length > 0) {
+                updateMapQuickCard(currentStops[0]);
+            }
+        }
+
+        // 지도 하단 퀵 카드 갱신
+        function updateMapQuickCard(item) {
+            const titleStr = `${item.seq} ${item.name}`;
+            document.getElementById('mq-badge').innerText = item.seq;
+            document.getElementById('mq-title').innerText = titleStr;
+            document.getElementById('mq-addr').innerText = `${item.address} (${item.boxQty})`;
+            document.getElementById('mq-time').innerText = `${item.arrTime} 도착`;
+
+            document.getElementById('mq-btn-title').onclick = () => copyText(titleStr, '타이틀');
+            document.getElementById('mq-btn-addr').onclick = () => copyText(item.address, '주소');
+            const telLink = document.getElementById('mq-btn-tel');
+            if (item.phone) {
+                telLink.href = `tel:${item.phone}`;
+                telLink.classList.remove('opacity-40', 'pointer-events-none');
+            } else {
+                telLink.href = '#';
+                telLink.classList.add('opacity-40', 'pointer-events-none');
+            }
+        }
+
+        // 모달 제어 (추가 / 수정)
+        function openAddModal() {
+            editingStopId = null;
+            document.getElementById('modal-title').innerText = "새 배송지 추가";
+            document.getElementById('input-name').value = "";
+            document.getElementById('input-address').value = "";
+            document.getElementById('input-qty').value = "";
+            document.getElementById('input-phone').value = "";
+            document.getElementById('input-note').value = "";
+            document.getElementById('modal-edit').classList.remove('hidden');
+        }
+
+        function openEditModal(stopId) {
+            const stop = currentStops.find(s => s.id === stopId);
+            if (!stop) return;
+
+            editingStopId = stopId;
+            document.getElementById('modal-title').innerText = `배송지 수정 (${stop.name})`;
+            document.getElementById('input-name').value = stop.name || "";
+            document.getElementById('input-address').value = stop.address || "";
+            document.getElementById('input-qty').value = stop.boxQty || "";
+            document.getElementById('input-phone').value = stop.phone || "";
+            document.getElementById('input-note').value = stop.note || "";
+            document.getElementById('modal-edit').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-edit').classList.add('hidden');
+        }
+
+        function saveModalStop() {
+            const name = document.getElementById('input-name').value.trim();
+            const address = document.getElementById('input-address').value.trim();
+            const boxQty = document.getElementById('input-qty').value.trim() || "1박스";
+            const phone = document.getElementById('input-phone').value.trim();
+            const note = document.getElementById('input-note').value.trim() || "직접 추가";
+
+            if (!name || !address) {
+                showToast("이름과 도로명 주소를 입력해주세요.");
+                return;
+            }
+
+            if (editingStopId) {
+                const stop = currentStops.find(s => s.id === editingStopId);
+                if (stop) {
+                    stop.name = name;
+                    stop.address = address;
+                    stop.boxQty = boxQty;
+                    stop.phone = phone;
+                    stop.note = note;
+                }
+            } else {
+                // 새 배송지 추가 (기본 서귀포 중심 좌표 부여 후 최적화 편입)
+                const newId = `${currentTab}_custom_${Date.now()}`;
+                currentStops.push({
+                    id: newId,
+                    name,
+                    address,
+                    boxQty,
+                    phone,
+                    note,
+                    lat: 33.2550 + (Math.random() - 0.5) * 0.05,
+                    lon: 126.4500 + (Math.random() - 0.5) * 0.1,
+                    unloadMin: 6
+                });
+            }
+
+            closeModal();
+            renderAll();
+            showToast("배송 목록이 저장되었습니다.");
+        }
+
+        // 하차 완료 토글
+        function toggleComplete(key) {
+            completedMap[key] = !completedMap[key];
+            renderCards();
+            updateProgress();
+            if (currentView === 'map') {
+                renderMap();
+            }
+        }
+
+        // 진행 진척도 갱신
+        function updateProgress() {
+            const total = currentStops.length;
+            let completedCount = 0;
+            currentStops.forEach(item => {
+                const k = `${currentTab}_${item.id}`;
+                if (completedMap[k]) completedCount++;
+            });
+
+            const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+            document.getElementById('progress-stat').innerText = `${completedCount} / ${total} (${pct}%)`;
+        }
 
         // 클립보드 복사 함수 (iFrame 및 모바일 사파리 호환)
         async function copyText(text, label) {
@@ -410,10 +875,9 @@
 
         // 전체 주소 리스트 복사
         function copyAllAddresses() {
-            const list = currentTab === 'am' ? AM_DATA : PM_DATA;
             const title = currentTab === 'am' ? '16일 오전 배송 목록' : '16일 오후 배송 목록';
             let full = `[${title}]\n`;
-            list.forEach(s => {
+            currentStops.forEach(s => {
                 full += `${s.seq} ${s.name}: ${s.address} (${s.boxQty}) - ${s.phone || '연락처 없음'}\n`;
             });
             copyText(full, "전체 목록");
@@ -430,292 +894,15 @@
             }, 1800);
         }
 
-        // 탭 전환 (오전 / 오후)
-        function switchTab(tabKey) {
-            currentTab = tabKey;
-            const btnAm = document.getElementById('tab-am');
-            const btnPm = document.getElementById('tab-pm');
-            const summaryDist = document.getElementById('summary-dist');
-            const summaryQty = document.getElementById('summary-qty');
-            const summaryFinish = document.getElementById('summary-finish');
-
-            if (tabKey === 'am') {
-                btnAm.className = "py-2 rounded-xl text-xs font-bold transition bg-sky-600 text-white shadow";
-                btnPm.className = "py-2 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400";
-                summaryDist.innerText = "60.1 km";
-                summaryQty.innerText = "195 박스";
-                summaryFinish.innerText = "11:32";
-            } else {
-                btnPm.className = "py-2 rounded-xl text-xs font-bold transition bg-sky-600 text-white shadow";
-                btnAm.className = "py-2 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400";
-                summaryDist.innerText = "53.9 km";
-                summaryQty.innerText = "362 박스";
-                summaryFinish.innerText = "15:58";
-            }
-
-            renderCards();
-            updateProgress();
-            if (currentView === 'map') {
-                renderMap();
-            }
-        }
-
-        // 뷰 모드 전환 (목록 / 지도) - 검은 화면 버그 완벽 방지
-        function switchView(viewKey) {
-            currentView = viewKey;
-            const btnList = document.getElementById('view-btn-list');
-            const btnMap = document.getElementById('view-btn-map');
-            const cList = document.getElementById('container-list');
-            const cMap = document.getElementById('container-map');
-
-            if (viewKey === 'list') {
-                btnList.className = "py-1 rounded-lg text-xs font-bold transition bg-sky-600 text-white flex items-center justify-center gap-1";
-                btnMap.className = "py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1";
-                cList.classList.remove('hidden');
-                cMap.classList.add('hidden');
-            } else {
-                btnMap.className = "py-1 rounded-lg text-xs font-bold transition bg-sky-600 text-white flex items-center justify-center gap-1";
-                btnList.className = "py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1";
-                cList.classList.add('hidden');
-                cMap.classList.remove('hidden');
-
-                // 컨테이너가 화면에 표시된 후 지도 렌더링 및 크기 재계산 호출
-                requestAnimationFrame(() => {
-                    renderMap();
-                    setTimeout(() => {
-                        if (mapInstance) {
-                            mapInstance.invalidateSize(true);
-                            if (routeLine) {
-                                mapInstance.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
-                            }
-                        }
-                    }, 80);
-                });
-            }
-        }
-
-        // 하차 완료 토글
-        function toggleComplete(key) {
-            completedMap[key] = !completedMap[key];
-            renderCards();
-            updateProgress();
-            if (currentView === 'map') {
-                renderMap();
-            }
-        }
-
-        // 완료율 업데이트
-        function updateProgress() {
-            const list = currentTab === 'am' ? AM_DATA : PM_DATA;
-            const total = list.length;
-            let completedCount = 0;
-
-            list.forEach(item => {
-                const k = `${currentTab}_${item.seq}`;
-                if (completedMap[k]) completedCount++;
-            });
-
-            const pct = Math.round((completedCount / total) * 100);
-            document.getElementById('progress-stat').innerText = `${completedCount} / ${total} (${pct}%)`;
-        }
-
-        // Leaflet 지도 렌더링
-        function renderMap() {
-            const mapEl = document.getElementById('map');
-            if (!mapEl) return;
-
-            if (!mapInstance) {
-                mapInstance = L.map('map', { 
-                    zoomControl: false,
-                    attributionControl: false 
-                }).setView([33.25, 126.40], 11);
-
-                // 고신뢰 표준 타일 레이어 적용
-                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19
-                }).addTo(mapInstance);
-
-                markersLayer = L.layerGroup().addTo(mapInstance);
-            }
-
-            markersLayer.clearLayers();
-            if (routeLine) {
-                mapInstance.removeLayer(routeLine);
-            }
-
-            const list = currentTab === 'am' ? AM_DATA : PM_DATA;
-            const latlngs = [];
-
-            // 이마트 출발점 핀
-            latlngs.push([33.2471, 126.5098]);
-            L.marker([33.2471, 126.5098], {
-                icon: L.divIcon({
-                    className: 'hub-pin-icon',
-                    html: `<div class="hub-pin">출발: 이마트</div>`,
-                    iconSize: [84, 24],
-                    iconAnchor: [42, 12]
-                })
-            }).addTo(markersLayer);
-
-            list.forEach(item => {
-                const pt = [item.lat, item.lon];
-                latlngs.push(pt);
-
-                const uniqueKey = `${currentTab}_${item.seq}`;
-                const isDone = !!completedMap[uniqueKey];
-                const isFinal = item.seq === list.length;
-                const pinColor = isDone ? '#10b981' : (isFinal ? '#f59e0b' : '#0284c7');
-
-                const marker = L.marker(pt, {
-                    icon: L.divIcon({
-                        className: 'custom-pin-icon',
-                        html: `<div class="map-pin" style="background-color: ${pinColor}; width: 28px; height: 28px;">${isDone ? '✓' : item.seq}</div>`,
-                        iconSize: [28, 28],
-                        iconAnchor: [14, 14]
-                    })
-                }).addTo(markersLayer);
-
-                marker.on('click', () => {
-                    updateMapQuickCard(item);
-                });
-            });
-
-            routeLine = L.polyline(latlngs, {
-                color: currentTab === 'am' ? '#0ea5e9' : '#38bdf8',
-                weight: 4,
-                opacity: 0.85,
-                dashArray: '6, 6'
-            }).addTo(mapInstance);
-
-            // 지도 영역 맞춤
-            setTimeout(() => {
-                mapInstance.invalidateSize(true);
-                mapInstance.fitBounds(routeLine.getBounds(), { padding: [35, 35] });
-            }, 50);
-
-            // 첫 번째 항목 퀵 카드 표시
-            updateMapQuickCard(list[0]);
-        }
-
-        // 지도 하단 퀵 카드 업데이트
-        function updateMapQuickCard(item) {
-            const titleStr = `${item.seq} ${item.name}`;
-            document.getElementById('mq-badge').innerText = item.seq;
-            document.getElementById('mq-title').innerText = titleStr;
-            document.getElementById('mq-addr').innerText = `${item.address} (${item.boxQty})`;
-            document.getElementById('mq-time').innerText = `${item.arrTime} 도착`;
-
-            // 버튼 액션 바인딩
-            document.getElementById('mq-btn-title').onclick = () => copyText(titleStr, '타이틀');
-            document.getElementById('mq-btn-addr').onclick = () => copyText(item.address, '주소');
-            const telLink = document.getElementById('mq-btn-tel');
-            if (item.phone) {
-                telLink.href = `tel:${item.phone}`;
-                telLink.classList.remove('opacity-40', 'pointer-events-none');
-            } else {
-                telLink.href = '#';
-                telLink.classList.add('opacity-40', 'pointer-events-none');
-            }
-        }
-
-        // 초압축 카드 목록 렌더링
-        function renderCards() {
-            const list = currentTab === 'am' ? AM_DATA : PM_DATA;
-            const container = document.getElementById('container-list');
-            let html = '';
-
-            list.forEach(item => {
-                const uniqueKey = `${currentTab}_${item.seq}`;
-                const isDone = !!completedMap[uniqueKey];
-                const isFinal = item.seq === list.length;
-                const titleStr = `${item.seq} ${item.name}`;
-
-                html += `
-                    <div class="border rounded-xl p-2.5 transition duration-150 ${
-                        isDone 
-                            ? 'bg-slate-900/40 border-slate-800 opacity-60' 
-                            : isFinal
-                                ? 'bg-slate-900 border-amber-500/50 shadow-md'
-                                : 'bg-slate-900 border-slate-800 shadow-sm'
-                    }">
-                        <!-- 1줄: 순번, 타이틀, 박스수량, 도착시간, 하차완료 체크 -->
-                        <div class="flex justify-between items-center mb-1.5">
-                            <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                                <span class="w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
-                                    isDone 
-                                        ? 'bg-emerald-500 text-slate-950' 
-                                        : isFinal ? 'bg-amber-400 text-slate-950' : 'bg-sky-500 text-slate-950'
-                                }">
-                                    ${isDone ? '<i class="fa-solid fa-check text-[10px]"></i>' : item.seq}
-                                </span>
-                                <h2 class="font-bold text-xs truncate ${isDone ? 'line-through text-slate-400' : 'text-white'}">
-                                    ${titleStr}
-                                </h2>
-                                <span class="text-[10px] text-amber-300 font-mono font-bold shrink-0">(${item.boxQty})</span>
-                            </div>
-
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <span class="font-mono text-[11px] font-bold text-sky-400">${item.arrTime}</span>
-                                <button onclick="toggleComplete('${uniqueKey}')" class="text-[10px] px-1.5 py-0.5 rounded border ${
-                                    isDone 
-                                        ? 'bg-emerald-950 border-emerald-500/40 text-emerald-300 font-bold' 
-                                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
-                                }">
-                                    ${isDone ? '하차완료' : '미완료'}
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- 2줄: 내비 주소 + 원터치 복사 버튼 -->
-                        <div class="bg-slate-950/80 rounded-lg p-1.5 mb-1.5 flex items-center justify-between gap-1.5 border border-slate-800">
-                            <span class="text-xs font-mono font-bold text-amber-300 truncate pl-1">
-                                ${item.address}
-                            </span>
-                            <button onclick="copyText('${item.address}', '주소')" class="shrink-0 bg-sky-600 hover:bg-sky-500 active:scale-95 px-2.5 py-1 rounded-md text-xs font-bold text-white shadow flex items-center gap-1">
-                                <i class="fa-solid fa-location-arrow text-[10px]"></i>
-                                <span>주소 복사</span>
-                            </button>
-                        </div>
-
-                        <!-- 3줄: 빠른 액션 버튼 (타이틀 복사 + 연락처 복사 + 바로통화 + 상세메모) -->
-                        <div class="flex items-center justify-between gap-1 text-[10px]">
-                            <div class="truncate text-slate-400 flex-1 pr-1">
-                                <i class="fa-solid fa-info-circle text-sky-400 mr-0.5"></i>
-                                <span>${item.note}</span>
-                            </div>
-                            
-                            <div class="flex items-center gap-1 shrink-0">
-                                <button onclick="copyText('${titleStr}', '타이틀')" class="bg-slate-800 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-sky-300 border border-slate-700">
-                                    타이틀
-                                </button>
-                                ${item.phone ? `
-                                    <button onclick="copyText('${item.phone}', '전화번호')" class="bg-slate-800 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-slate-300 border border-slate-700">
-                                        번호
-                                    </button>
-                                    <a href="tel:${item.phone}" class="bg-emerald-700 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-white shadow flex items-center gap-0.5">
-                                        <i class="fa-solid fa-phone text-[8px]"></i>
-                                        <span>통화</span>
-                                    </a>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        // 창 크기 변경 시 지도 자동 보정
+        // 창 크기 조절 시 지도 리사이즈
         window.addEventListener('resize', () => {
             if (mapInstance && currentView === 'map') {
                 mapInstance.invalidateSize(true);
             }
         });
 
-        // 초기 시작
-        renderCards();
-        updateProgress();
+        // 초기 구동
+        renderAll();
     </script>
 </body>
 </html>
