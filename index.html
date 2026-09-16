@@ -2,9 +2,9 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>배송 내비 원터치 복사기</title>
-    <!-- 모바일 웹앱/PWA 설정 -->
+    <!-- 모바일 웹앱 / PWA 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#020617">
@@ -12,6 +12,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icon CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Leaflet 지도 라이브러리 CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
@@ -24,222 +27,334 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        /* 지도 커스텀 숫자 핀 스타일 */
+        .map-pin {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 12px;
+            border: 2px solid #ffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.15s ease-in-out;
+        }
+        .map-pin:active {
+            transform: scale(1.2);
+        }
+        .hub-pin {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            color: #ffffff;
+            background: #e11d48;
+            font-weight: 900;
+            font-size: 11px;
+            border: 2px solid #ffffff;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+            padding: 2px 6px;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col select-none">
 
-    <!-- 상단 고정 헤더 -->
-    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 px-4 py-3 shadow-xl">
+    <!-- 상단 고정 헤더 영역 -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 px-3 py-2.5 shadow-xl">
+        <!-- 타이틀 바 -->
         <div class="max-w-md mx-auto flex justify-between items-center mb-2">
             <div>
-                <span class="text-[10px] font-bold text-sky-400 tracking-wider uppercase block">카카오내비 연동 지원도구</span>
-                <h1 class="text-base font-black text-white flex items-center gap-1.5">
+                <span class="text-[10px] font-bold text-sky-400 tracking-wider uppercase block">카카오내비 연동 도구</span>
+                <h1 class="text-sm font-black text-white flex items-center gap-1.5">
                     배송지 원터치 복사기
                 </h1>
             </div>
-            <button onclick="copyAllAddresses()" class="text-xs bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow">
+            <!-- 복사 알림 토스트 (헤더 우측에 배치하여 화면 가림 방지) -->
+            <button onclick="copyAllAddresses()" class="text-xs bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-bold px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 shadow">
                 <i class="fa-regular fa-copy text-xs"></i>
                 <span>전체 복사</span>
             </button>
         </div>
 
-        <!-- 오전 / 오후 탭 전환 -->
-        <div class="max-w-md mx-auto grid grid-cols-2 gap-1.5 mb-2.5">
-            <button onclick="switchTab('pm')" id="tab-pm" class="py-2 rounded-xl text-xs font-bold transition bg-sky-600 text-white shadow">
-                16일 오후 (번영로 마감)
-            </button>
-            <button onclick="switchTab('am')" id="tab-am" class="py-2 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400">
+        <!-- 1. 오전 / 오후 탭 전환 (요청대로 오전이 첫 번째로 오도록 배치) -->
+        <div class="max-w-md mx-auto grid grid-cols-2 gap-1.5 mb-2">
+            <button onclick="switchTab('am')" id="tab-am" class="py-2 rounded-xl text-xs font-bold transition bg-sky-600 text-white shadow">
                 16일 오전 (대정 우선)
             </button>
+            <button onclick="switchTab('pm')" id="tab-pm" class="py-2 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400">
+                16일 오후 (번영로 마감)
+            </button>
         </div>
 
-        <!-- 운행 지표 요약 바 -->
-        <div class="max-w-md mx-auto bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 grid grid-cols-3 gap-2 text-center text-xs">
+        <!-- 운행 지표 요약 바 (컴팩트 그리드) -->
+        <div class="max-w-md mx-auto bg-slate-950/90 border border-slate-800 rounded-xl p-2 grid grid-cols-4 gap-1 text-center text-xs">
             <div>
-                <span class="text-[10px] text-slate-400 block font-medium">총 주행거리</span>
-                <strong id="summary-dist" class="text-sky-400 font-mono font-bold text-sm">53.9 km</strong>
+                <span class="text-[9px] text-slate-400 block font-medium">총 주행</span>
+                <strong id="summary-dist" class="text-sky-400 font-mono font-bold text-xs">60.1 km</strong>
             </div>
-            <div class="border-x border-slate-800">
-                <span class="text-[10px] text-slate-400 block font-medium">총 물량</span>
-                <strong id="summary-qty" class="text-amber-400 font-mono font-bold text-sm">362 박스</strong>
+            <div class="border-l border-slate-800">
+                <span class="text-[9px] text-slate-400 block font-medium">총 물량</span>
+                <strong id="summary-qty" class="text-amber-400 font-mono font-bold text-xs">195 박스</strong>
             </div>
-            <div>
-                <span class="text-[10px] text-slate-400 block font-medium">마감 예정</span>
-                <strong id="summary-finish" class="text-emerald-400 font-mono font-bold text-sm">15:58</strong>
+            <div class="border-l border-slate-800">
+                <span class="text-[9px] text-slate-400 block font-medium">마감 예정</span>
+                <strong id="summary-finish" class="text-emerald-400 font-mono font-bold text-xs">11:32</strong>
+            </div>
+            <div class="border-l border-slate-800">
+                <span class="text-[9px] text-slate-400 block font-medium">하차 완료</span>
+                <strong id="progress-stat" class="text-white font-mono font-bold text-xs">0 / 6 (0%)</strong>
             </div>
         </div>
 
-        <!-- 진행 진척도 -->
-        <div class="max-w-md mx-auto mt-2 flex justify-between items-center text-[11px] text-slate-400 px-0.5">
-            <span>하차 완료: <b id="progress-stat" class="text-white">0 / 8개소 (0%)</b></span>
-            <span id="route-desc" class="text-amber-300 font-medium truncate max-w-[170px]">이마트 → 번영로 528</span>
+        <!-- 목록 보기 / 지도 보기 원터치 뷰 모드 스위처 -->
+        <div class="max-w-md mx-auto mt-2 grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button onclick="switchView('list')" id="view-btn-list" class="py-1 rounded-lg text-xs font-bold transition bg-sky-600 text-white flex items-center justify-center gap-1">
+                <i class="fa-solid fa-list-check text-[11px]"></i>
+                <span>목록 모드 (초압축)</span>
+            </button>
+            <button onclick="switchView('map')" id="view-btn-map" class="py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1">
+                <i class="fa-solid fa-map-location-dot text-[11px]"></i>
+                <span>지도 모드 (실시간)</span>
+            </button>
         </div>
     </header>
 
-    <!-- 복사 알림 토스트 (모바일 사파리/크롬 호환) -->
-    <div id="toast" class="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-2xl flex items-center gap-1.5 opacity-0 pointer-events-none transition-opacity duration-200">
+    <!-- 복사 알림 토스트 (모바일 플로팅) -->
+    <div id="toast" class="fixed top-28 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-2xl flex items-center gap-1.5 opacity-0 pointer-events-none transition-opacity duration-200">
         <i class="fa-solid fa-check text-xs"></i>
         <span id="toast-text">복사되었습니다.</span>
     </div>
 
-    <!-- 배송처 카드 목록 컨테이너 -->
-    <main class="flex-1 p-3.5 max-w-md w-full mx-auto space-y-3 pb-24" id="cards-container">
-        <!-- JavaScript로 동적 렌더링 -->
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="flex-1 max-w-md w-full mx-auto relative overflow-hidden flex flex-col">
+        
+        <!-- 1. 초압축 목록 뷰 (스크롤 최소화: 카드 높이를 절반 이하로 압축) -->
+        <div id="container-list" class="flex-1 p-2.5 space-y-2 overflow-y-auto pb-24">
+            <!-- JS 동적 생성 -->
+        </div>
+
+        <!-- 2. 인터랙티브 지도 뷰 (지도로 즉시 확인) -->
+        <div id="container-map" class="flex-1 w-full h-full relative hidden">
+            <div id="map" class="w-full h-full"></div>
+            
+            <!-- 지도 위 플로팅 선택 배송지 퀵 카드 (하단 고정) -->
+            <div id="map-quick-card" class="absolute bottom-4 left-3 right-3 bg-slate-900/95 backdrop-blur-md border border-slate-700/90 rounded-2xl p-3 shadow-2xl z-20 space-y-2">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-2">
+                        <span id="mq-badge" class="w-6 h-6 rounded-full bg-sky-500 text-slate-950 font-black text-xs flex items-center justify-center">1</span>
+                        <div>
+                            <h3 id="mq-title" class="text-sm font-bold text-white">배송지명</h3>
+                            <span id="mq-addr" class="text-[10px] text-amber-300 font-mono block">주소</span>
+                        </div>
+                    </div>
+                    <span id="mq-time" class="text-xs font-mono font-bold text-sky-400 bg-slate-800 px-2 py-0.5 rounded">00:00 도착</span>
+                </div>
+                <!-- 퀵 복사 액션 버튼 -->
+                <div class="grid grid-cols-3 gap-1.5 pt-1">
+                    <button id="mq-btn-title" class="bg-slate-800 active:scale-95 py-1.5 rounded-lg text-xs font-bold text-sky-300 border border-slate-700">
+                        타이틀 복사
+                    </button>
+                    <button id="mq-btn-addr" class="bg-sky-600 active:scale-95 py-1.5 rounded-lg text-xs font-bold text-white shadow">
+                        주소 복사
+                    </button>
+                    <a id="mq-btn-tel" href="#" class="bg-emerald-700 active:scale-95 py-1.5 rounded-lg text-xs font-bold text-white text-center flex items-center justify-center gap-1 shadow">
+                        <i class="fa-solid fa-phone text-[10px]"></i>
+                        <span>통화</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script>
-        // 16일 오후 데이터 (이마트 -> 번영로 528 마감)
-        const PM_DATA = [
-            {
-                seq: 1,
-                titleName: "삼화페인트",
-                address: "서귀포시 일주동로 8701",
-                phone: "010-5413-1048",
-                boxQty: "30박스",
-                goods: "대상 청정원 스페셜 S (30)",
-                note: "도로변 매장 앞 하차",
-                arrTime: "13:38"
-            },
-            {
-                seq: 2,
-                titleName: "형남종합건설",
-                address: "서귀포시 동홍동로 39",
-                phone: "010-5395-2050",
-                boxQty: "23박스",
-                goods: "동원 튜나리챔 S호 (23)",
-                note: "2층 사무실 (계단/E/V)",
-                arrTime: "13:50"
-            },
-            {
-                seq: 3,
-                titleName: "영농철강",
-                address: "서귀포시 516로 55-4",
-                phone: "010-5066-9728",
-                boxQty: "47박스",
-                goods: "CJ 복합 T-2호 (40), 동원 60호 (2), 엘지 5호 (5)",
-                note: "비석거리 북측 사업장",
-                arrTime: "13:59"
-            },
-            {
-                seq: 4,
-                titleName: "새한공조",
-                address: "서귀포시 일주동로 8383",
-                phone: "010-5659-7036",
-                boxQty: "67박스",
-                goods: "정관장 홍삼원골드 60포 (67)",
-                note: "일주동로변 공조 매장 (오타 국번 정정)",
-                arrTime: "14:14"
-            },
-            {
-                seq: 5,
-                titleName: "동남산업",
-                address: "서귀포시 토평공단로 106번길 18",
-                phone: "010-5395-2050",
-                boxQty: "27박스",
-                goods: "튜나리챔 (16), 참치 M16 (2), 락토핏 (6), 올리브 (3)",
-                note: "토평공단 내 공장 (형남건설과 연락처 동일)",
-                arrTime: "14:29"
-            },
-            {
-                seq: 6,
-                titleName: "삼다감귤영농조합",
-                address: "서귀포시 효돈순환로 296",
-                phone: "010-7203-1981",
-                boxQty: "45박스",
-                goods: "청정원 종합 3호 (33), 정담은 표고혼합 (12)",
-                note: "사업장 하차장 (효돈순환로 대로변)",
-                arrTime: "14:44"
-            },
-            {
-                seq: 7,
-                titleName: "스프링데일",
-                address: "서귀포시 남원읍 서성로 159",
-                phone: "010-7153-2848",
-                boxQty: "123박스",
-                goods: "CJ 스팸 EM호 (123)",
-                note: "스프링데일CC 클럽하우스 (장명학 / 대량 123박스)",
-                arrTime: "15:11"
-            },
-            {
-                seq: 8,
-                titleName: "번영로 528",
-                address: "제주시 번영로 528",
-                phone: "",
-                boxQty: "마감",
-                goods: "운행 종료 및 최종 도착 지점",
-                note: "제주시 봉개동 제주봉개LH아파트 일원",
-                arrTime: "15:58"
-            }
-        ];
-
-        // 16일 오전 데이터 (이마트 -> 대정 우선 -> 이마트 복귀)
+        // 16일 오전 데이터 (대정 우선 -> 이마트 서귀포점 복귀)
         const AM_DATA = [
             {
                 seq: 1,
-                titleName: "이홍주",
+                name: "이홍주",
                 address: "서귀포시 대정읍 상모로 14",
                 phone: "010-8598-5327",
                 boxQty: "35박스",
                 goods: "동원 프리미엄 60호 (35)",
-                note: "최남단 현대주유소 하차",
-                arrTime: "10:01"
+                note: "최남단 현대주유소 앞",
+                arrTime: "10:01",
+                lat: 33.2185,
+                lon: 126.2555
             },
             {
                 seq: 2,
-                titleName: "안덕신협",
+                name: "안덕신협",
                 address: "서귀포시 안덕면 화순로 95",
                 phone: "064-794-2201",
                 boxQty: "29박스",
                 goods: "청정원 S50호 (29)",
                 note: "화순사거리 신협 본점",
-                arrTime: "10:20"
+                arrTime: "10:20",
+                lat: 33.2458,
+                lon: 126.3353
             },
             {
                 seq: 3,
-                titleName: "이진영",
+                name: "이진영",
                 address: "서귀포시 안덕면 중산간서로 1610",
                 phone: "010-8660-5200",
                 boxQty: "100박스",
                 goods: "동원참치 S15 (93), 올리브 (4) 등 100박스",
-                note: "세계자동차박물관 하차 구역 (대량 물량)",
-                arrTime: "10:39"
+                note: "세계자동차박물관 하차 구역",
+                arrTime: "10:39",
+                lat: 33.3039,
+                lon: 126.3495
             },
             {
                 seq: 4,
-                titleName: "권동재",
+                name: "권동재",
                 address: "서귀포시 중문상로 82번길 45",
                 phone: "010-5179-5611",
                 boxQty: "16박스",
                 goods: "동원 참치/리챔(10), 잔슨빌(2), 땅콩버터(4)",
-                note: "103동 104호 (내비는 도로명만 복사)",
-                arrTime: "11:07"
+                note: "103동 104호 (도로명 주소만 복사)",
+                arrTime: "11:07",
+                lat: 33.2562,
+                lon: 126.4312
             },
             {
                 seq: 5,
-                titleName: "최상희",
+                name: "최상희",
                 address: "서귀포시 대청로 12",
                 phone: "010-6303-0276",
                 boxQty: "15박스",
                 goods: "사과&배 혼합 SET (10), 녹차원 베스트 (5)",
-                note: "106동 201호 (혁신도시 LH아파트 / 이마트 1.3km 복귀)",
-                arrTime: "11:24"
+                note: "106동 201호 (혁신도시 LH아파트)",
+                arrTime: "11:24",
+                lat: 33.2535,
+                lon: 126.5165
             },
             {
                 seq: 6,
-                titleName: "이마트 서귀포점",
+                name: "이마트 서귀포점",
                 address: "서귀포시 일주동로 9209",
                 phone: "064-797-1234",
                 boxQty: "복귀",
-                goods: "오전 운행 마감",
+                goods: "오전 운행 최종 마감",
                 note: "월드컵경기장 옆 이마트 복귀",
-                arrTime: "11:32"
+                arrTime: "11:32",
+                lat: 33.2471,
+                lon: 126.5098
             }
         ];
 
-        let currentTab = 'pm';
-        let completedMap = {};
+        // 16일 오후 데이터 (이마트 -> 서귀포 시내 -> 스프링데일 -> 제주시 번영로 528 마감)
+        const PM_DATA = [
+            {
+                seq: 1,
+                name: "삼화페인트",
+                address: "서귀포시 일주동로 8701",
+                phone: "010-5413-1048",
+                boxQty: "30박스",
+                goods: "대상 청정원 스페셜 S (30)",
+                note: "도로변 매장 앞",
+                arrTime: "13:38",
+                lat: 33.2494,
+                lon: 126.5512
+            },
+            {
+                seq: 2,
+                name: "형남종합건설",
+                address: "서귀포시 동홍동로 39",
+                phone: "010-5395-2050",
+                boxQty: "23박스",
+                goods: "동원 튜나리챔 S호 (23)",
+                note: "2층 사무실",
+                arrTime: "13:50",
+                lat: 33.2572,
+                lon: 126.5741
+            },
+            {
+                seq: 3,
+                name: "영농철강",
+                address: "서귀포시 516로 55-4",
+                phone: "010-5066-9728",
+                boxQty: "47박스",
+                goods: "CJ 복합 T-2호 (40), 동원 (2), 엘지 (5)",
+                note: "비석거리 북측 사업장",
+                arrTime: "13:59",
+                lat: 33.2625,
+                lon: 126.5823
+            },
+            {
+                seq: 4,
+                name: "새한공조",
+                address: "서귀포시 일주동로 8383",
+                phone: "010-5659-7036",
+                boxQty: "67박스",
+                goods: "정관장 홍삼원골드 60포 (67)",
+                note: "일주동로변 공조 매장",
+                arrTime: "14:14",
+                lat: 33.2655,
+                lon: 126.5992
+            },
+            {
+                seq: 5,
+                name: "동남산업",
+                address: "서귀포시 토평공단로 106번길 18",
+                phone: "010-5395-2050",
+                boxQty: "27박스",
+                goods: "튜나리챔(16), 참치(2), 락토핏(6), 올리브(3)",
+                note: "토평공단 내 공장",
+                arrTime: "14:29",
+                lat: 33.2778,
+                lon: 126.5985
+            },
+            {
+                seq: 6,
+                name: "삼다감귤영농조합",
+                address: "서귀포시 효돈순환로 296",
+                phone: "010-7203-1981",
+                boxQty: "45박스",
+                goods: "청정원 종합 3호 (33), 표고혼합 (12)",
+                note: "효돈순환로 사업장",
+                arrTime: "14:44",
+                lat: 33.2682,
+                lon: 126.6185
+            },
+            {
+                seq: 7,
+                name: "스프링데일",
+                address: "서귀포시 남원읍 서성로 159",
+                phone: "010-7153-2848",
+                boxQty: "123박스",
+                goods: "CJ 스팸 EM호 (123)",
+                note: "골프장 클럽하우스 (장명학 / 대량)",
+                arrTime: "15:11",
+                lat: 33.3255,
+                lon: 126.6715
+            },
+            {
+                seq: 8,
+                name: "번영로 528",
+                address: "제주시 번영로 528",
+                phone: "",
+                boxQty: "마감",
+                goods: "오후 운행 최종 종료",
+                note: "제주시 봉개동 제주봉개LH아파트",
+                arrTime: "15:58",
+                lat: 33.4988,
+                lon: 126.6022
+            }
+        ];
 
-        // 모바일 사파리/크롬 완벽 호환 클립보드 복사 함수
+        // 앱 상태 (기본값: 오전)
+        let currentTab = 'am';
+        let currentView = 'list'; // 'list' or 'map'
+        let completedMap = {};
+        let mapInstance = null;
+        let markersLayer = null;
+        let routeLine = null;
+
+        // 모바일 사파리 및 크롬 완벽 호환 클립보드 복사 함수
         async function copyText(text, label) {
             let success = false;
             if (navigator.clipboard && window.isSecureContext) {
@@ -271,17 +386,17 @@
             if (success) {
                 showToast(`[${label}] 복사되었습니다: ${text}`);
             } else {
-                window.prompt("아래 내용을 복사하세요:", text);
+                window.prompt("아래 텍스트를 복사하세요:", text);
             }
         }
 
         // 전체 주소 리스트 복사
         function copyAllAddresses() {
-            const list = currentTab === 'pm' ? PM_DATA : AM_DATA;
-            const title = currentTab === 'pm' ? '16일 오후 배송 주소 리스트' : '16일 오전 배송 주소 리스트';
+            const list = currentTab === 'am' ? AM_DATA : PM_DATA;
+            const title = currentTab === 'am' ? '16일 오전 배송 목록' : '16일 오후 배송 목록';
             let full = `[${title}]\n`;
             list.forEach(s => {
-                full += `${s.seq} ${s.titleName}: ${s.address} (${s.boxQty}) - ${s.phone || '연락처 없음'}\n`;
+                full += `${s.seq} ${s.name}: ${s.address} (${s.boxQty}) - ${s.phone || '연락처 없음'}\n`;
             });
             copyText(full, "전체 목록");
         }
@@ -297,34 +412,56 @@
             }, 1800);
         }
 
-        // 탭 전환
+        // 탭 전환 (오전 / 오후)
         function switchTab(tabKey) {
             currentTab = tabKey;
-            const btnPm = document.getElementById('tab-pm');
             const btnAm = document.getElementById('tab-am');
+            const btnPm = document.getElementById('tab-pm');
             const summaryDist = document.getElementById('summary-dist');
             const summaryQty = document.getElementById('summary-qty');
             const summaryFinish = document.getElementById('summary-finish');
-            const routeDesc = document.getElementById('route-desc');
 
-            if (tabKey === 'pm') {
-                btnPm.className = "py-2 rounded-xl text-xs font-bold transition bg-sky-600 text-white shadow";
-                btnAm.className = "py-2 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400";
-                summaryDist.innerText = "53.9 km";
-                summaryQty.innerText = "362 박스";
-                summaryFinish.innerText = "15:58";
-                routeDesc.innerText = "이마트 → 번영로 528";
-            } else {
+            if (tabKey === 'am') {
                 btnAm.className = "py-2 rounded-xl text-xs font-bold transition bg-sky-600 text-white shadow";
                 btnPm.className = "py-2 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400";
                 summaryDist.innerText = "60.1 km";
                 summaryQty.innerText = "195 박스";
                 summaryFinish.innerText = "11:32";
-                routeDesc.innerText = "대정 우선 → 이마트 복귀";
+            } else {
+                btnPm.className = "py-2 rounded-xl text-xs font-bold transition bg-sky-600 text-white shadow";
+                btnAm.className = "py-2 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400";
+                summaryDist.innerText = "53.9 km";
+                summaryQty.innerText = "362 박스";
+                summaryFinish.innerText = "15:58";
             }
 
             renderCards();
             updateProgress();
+            if (currentView === 'map') {
+                renderMap();
+            }
+        }
+
+        // 뷰 모드 전환 (목록 / 지도)
+        function switchView(viewKey) {
+            currentView = viewKey;
+            const btnList = document.getElementById('view-btn-list');
+            const btnMap = document.getElementById('view-btn-map');
+            const cList = document.getElementById('container-list');
+            const cMap = document.getElementById('container-map');
+
+            if (viewKey === 'list') {
+                btnList.className = "py-1 rounded-lg text-xs font-bold transition bg-sky-600 text-white flex items-center justify-center gap-1";
+                btnMap.className = "py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1";
+                cList.classList.remove('hidden');
+                cMap.classList.add('hidden');
+            } else {
+                btnMap.className = "py-1 rounded-lg text-xs font-bold transition bg-sky-600 text-white flex items-center justify-center gap-1";
+                btnList.className = "py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1";
+                cList.classList.add('hidden');
+                cMap.classList.remove('hidden');
+                renderMap();
+            }
         }
 
         // 하차 완료 토글
@@ -332,11 +469,14 @@
             completedMap[key] = !completedMap[key];
             renderCards();
             updateProgress();
+            if (currentView === 'map') {
+                renderMap();
+            }
         }
 
         // 완료율 업데이트
         function updateProgress() {
-            const list = currentTab === 'pm' ? PM_DATA : AM_DATA;
+            const list = currentTab === 'am' ? AM_DATA : PM_DATA;
             const total = list.length;
             let completedCount = 0;
 
@@ -346,113 +486,180 @@
             });
 
             const pct = Math.round((completedCount / total) * 100);
-            document.getElementById('progress-stat').innerText = `${completedCount} / ${total}개소 (${pct}%)`;
+            document.getElementById('progress-stat').innerText = `${completedCount} / ${total} (${pct}%)`;
         }
 
-        // 카드 목록 렌더링
+        // 지도 렌더링 및 핀 표시
+        function renderMap() {
+            if (!mapInstance) {
+                mapInstance = L.map('map', { zoomControl: false }).setView([33.25, 126.50], 11);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                    maxZoom: 19
+                }).addTo(mapInstance);
+                markersLayer = L.layerGroup().addTo(mapInstance);
+            }
+
+            markersLayer.clearLayers();
+            if (routeLine) {
+                mapInstance.removeLayer(routeLine);
+            }
+
+            const list = currentTab === 'am' ? AM_DATA : PM_DATA;
+            const latlngs = [];
+
+            // 이마트 출발점
+            latlngs.push([33.2471, 126.5098]);
+            const startMarker = L.marker([33.2471, 126.5098], {
+                icon: L.divIcon({
+                    className: 'hub-pin-icon',
+                    html: `<div class="hub-pin">출발: 이마트</div>`,
+                    iconSize: [80, 24],
+                    iconAnchor: [40, 12]
+                })
+            }).addTo(markersLayer);
+
+            list.forEach(item => {
+                const pt = [item.lat, item.lon];
+                latlngs.push(pt);
+
+                const uniqueKey = `${currentTab}_${item.seq}`;
+                const isDone = !!completedMap[uniqueKey];
+                const isFinal = item.seq === list.length;
+                const pinColor = isDone ? '#10b981' : (isFinal ? '#f59e0b' : '#0284c7');
+
+                const marker = L.marker(pt, {
+                    icon: L.divIcon({
+                        className: 'custom-pin-icon',
+                        html: `<div class="map-pin" style="background-color: ${pinColor}; width: 26px; height: 26px;">${isDone ? '✓' : item.seq}</div>`,
+                        iconSize: [26, 26],
+                        iconAnchor: [13, 13]
+                    })
+                }).addTo(markersLayer);
+
+                marker.on('click', () => {
+                    updateMapQuickCard(item);
+                });
+            });
+
+            routeLine = L.polyline(latlngs, {
+                color: currentTab === 'am' ? '#0ea5e9' : '#38bdf8',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: '6, 6'
+            }).addTo(mapInstance);
+
+            // 화면 크기 재계산 및 바운드 맞춤
+            setTimeout(() => {
+                mapInstance.invalidateSize();
+                mapInstance.fitBounds(routeLine.getBounds(), { padding: [35, 35] });
+            }, 100);
+
+            // 첫 번째 항목 퀵 카드에 기본 표기
+            updateMapQuickCard(list[0]);
+        }
+
+        // 지도 하단 퀵 카드 업데이트
+        function updateMapQuickCard(item) {
+            const titleStr = `${item.seq} ${item.name}`;
+            document.getElementById('mq-badge').innerText = item.seq;
+            document.getElementById('mq-title').innerText = titleStr;
+            document.getElementById('mq-addr').innerText = `${item.address} (${item.boxQty})`;
+            document.getElementById('mq-time').innerText = `${item.arrTime} 도착`;
+
+            // 버튼 액션 바인딩
+            document.getElementById('mq-btn-title').onclick = () => copyText(titleStr, '타이틀');
+            document.getElementById('mq-btn-addr').onclick = () => copyText(item.address, '주소');
+            const telLink = document.getElementById('mq-btn-tel');
+            if (item.phone) {
+                telLink.href = `tel:${item.phone}`;
+                telLink.classList.remove('opacity-40', 'pointer-events-none');
+            } else {
+                telLink.href = '#';
+                telLink.classList.add('opacity-40', 'pointer-events-none');
+            }
+        }
+
+        // 초압축 카드 목록 렌더링 (스크롤을 최소화하도록 높이를 절반 이하로 최적화)
         function renderCards() {
-            const list = currentTab === 'pm' ? PM_DATA : AM_DATA;
-            const container = document.getElementById('cards-container');
+            const list = currentTab === 'am' ? AM_DATA : PM_DATA;
+            const container = document.getElementById('container-list');
             let html = '';
 
             list.forEach(item => {
                 const uniqueKey = `${currentTab}_${item.seq}`;
                 const isDone = !!completedMap[uniqueKey];
                 const isFinal = item.seq === list.length;
-                const titleStr = `${item.seq} ${item.titleName}`;
+                const titleStr = `${item.seq} ${item.name}`;
 
                 html += `
-                    <div class="border rounded-2xl p-3.5 transition duration-150 ${
+                    <div class="border rounded-xl p-2.5 transition duration-150 ${
                         isDone 
                             ? 'bg-slate-900/40 border-slate-800 opacity-60' 
                             : isFinal
-                                ? 'bg-slate-900 border-amber-500/50 shadow-lg'
-                                : 'bg-slate-900 border-slate-800 shadow-md'
+                                ? 'bg-slate-900 border-amber-500/50 shadow-md'
+                                : 'bg-slate-900 border-slate-800 shadow-sm'
                     }">
-                        <!-- 카드 상단 -->
-                        <div class="flex justify-between items-start mb-2.5">
-                            <div class="flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center ${
+                        <!-- 1줄: 순번, 타이틀, 박스수량, 도착시간, 하차완료 체크 -->
+                        <div class="flex justify-between items-center mb-1.5">
+                            <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                                <span class="w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
                                     isDone 
                                         ? 'bg-emerald-500 text-slate-950' 
                                         : isFinal ? 'bg-amber-400 text-slate-950' : 'bg-sky-500 text-slate-950'
                                 }">
-                                    ${isDone ? '<i class="fa-solid fa-check"></i>' : item.seq}
+                                    ${isDone ? '<i class="fa-solid fa-check text-[10px]"></i>' : item.seq}
                                 </span>
-                                <div>
-                                    <h2 class="font-bold text-sm ${isDone ? 'line-through text-slate-400' : 'text-white'}">
-                                        ${titleStr}
-                                    </h2>
-                                    <span class="text-[11px] text-amber-400 font-medium">${item.goods}</span>
-                                </div>
+                                <h2 class="font-bold text-xs truncate ${isDone ? 'line-through text-slate-400' : 'text-white'}">
+                                    ${titleStr}
+                                </h2>
+                                <span class="text-[10px] text-amber-300 font-mono font-bold shrink-0">(${item.boxQty})</span>
                             </div>
-                            <div class="text-right">
-                                <span class="font-mono text-xs font-bold text-sky-400 block">${item.arrTime} 도착</span>
-                                <button onclick="toggleComplete('${uniqueKey}')" class="mt-1 text-[10px] px-2 py-0.5 rounded border ${
+
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <span class="font-mono text-[11px] font-bold text-sky-400">${item.arrTime}</span>
+                                <button onclick="toggleComplete('${uniqueKey}')" class="text-[10px] px-1.5 py-0.5 rounded border ${
                                     isDone 
-                                        ? 'bg-emerald-950 border-emerald-500/40 text-emerald-300' 
-                                        : 'bg-slate-800 border-slate-700 text-slate-400'
+                                        ? 'bg-emerald-950 border-emerald-500/40 text-emerald-300 font-bold' 
+                                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
                                 }">
                                     ${isDone ? '하차완료' : '미완료'}
                                 </button>
                             </div>
                         </div>
 
-                        <!-- 참고 사항 및 상세 위치 -->
-                        <div class="bg-slate-950/70 rounded-xl px-2.5 py-1.5 mb-3 text-[11px] text-slate-300 border border-slate-800/80 flex items-center justify-between">
-                            <span class="truncate pr-2">
-                                <i class="fa-solid fa-circle-info text-sky-400 mr-1"></i>
-                                ${item.note}
+                        <!-- 2줄: 내비 주소 + 원터치 복사 버튼 (가장 자주 쓰는 기능 한 줄 배치) -->
+                        <div class="bg-slate-950/80 rounded-lg p-1.5 mb-1.5 flex items-center justify-between gap-1.5 border border-slate-800">
+                            <span class="text-xs font-mono font-bold text-amber-300 truncate pl-1">
+                                ${item.address}
                             </span>
-                            <span class="font-bold text-slate-200 font-mono shrink-0">${item.boxQty}</span>
-                        </div>
-
-                        <!-- 1. 타이틀 복사 영역 -->
-                        <div class="mb-2 bg-slate-950/80 border border-slate-800 rounded-xl p-2 flex items-center justify-between gap-2">
-                            <div class="min-w-0 flex-1">
-                                <span class="text-[9px] font-bold text-slate-500 block uppercase">타이틀</span>
-                                <span class="text-xs font-mono font-bold text-slate-200 truncate block">${titleStr}</span>
-                            </div>
-                            <button onclick="copyText('${titleStr}', '타이틀')" class="shrink-0 bg-slate-800 hover:bg-slate-700 active:scale-95 px-2.5 py-1.5 rounded-lg text-xs font-bold text-sky-300 border border-slate-700 flex items-center gap-1">
-                                <i class="fa-regular fa-copy text-[11px]"></i>
-                                <span>타이틀 복사</span>
-                            </button>
-                        </div>
-
-                        <!-- 2. 내비 주소 복사 영역 (정제 도로명) -->
-                        <div class="mb-2 bg-slate-950/80 border border-slate-800 rounded-xl p-2 flex items-center justify-between gap-2">
-                            <div class="min-w-0 flex-1">
-                                <span class="text-[9px] font-bold text-slate-500 block uppercase">내비 주소</span>
-                                <span class="text-xs font-mono font-bold text-amber-300 truncate block">${item.address}</span>
-                            </div>
-                            <button onclick="copyText('${item.address}', '주소')" class="shrink-0 bg-sky-600 hover:bg-sky-500 active:scale-95 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white shadow flex items-center gap-1">
-                                <i class="fa-solid fa-location-arrow text-[11px]"></i>
+                            <button onclick="copyText('${item.address}', '주소')" class="shrink-0 bg-sky-600 hover:bg-sky-500 active:scale-95 px-2.5 py-1 rounded-md text-xs font-bold text-white shadow flex items-center gap-1">
+                                <i class="fa-solid fa-location-arrow text-[10px]"></i>
                                 <span>주소 복사</span>
                             </button>
                         </div>
 
-                        <!-- 3. 전화번호 복사 및 바로통화 -->
-                        ${item.phone ? `
-                            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2 flex items-center justify-between gap-2">
-                                <div class="min-w-0 flex-1">
-                                    <span class="text-[9px] font-bold text-slate-500 block uppercase">연락처</span>
-                                    <span class="text-xs font-mono font-bold text-slate-200 truncate block">${item.phone}</span>
-                                </div>
-                                <div class="flex gap-1 shrink-0">
-                                    <button onclick="copyText('${item.phone}', '전화번호')" class="bg-slate-800 hover:bg-slate-700 active:scale-95 px-2 py-1.5 rounded-lg text-xs font-bold text-slate-300 border border-slate-700">
-                                        번호 복사
+                        <!-- 3줄: 빠른 액션 버튼 (타이틀 복사 + 연락처 복사 + 바로통화 + 상세메모) -->
+                        <div class="flex items-center justify-between gap-1 text-[10px]">
+                            <div class="truncate text-slate-400 flex-1 pr-1">
+                                <i class="fa-solid fa-info-circle text-sky-400 mr-0.5"></i>
+                                <span>${item.note}</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button onclick="copyText('${titleStr}', '타이틀')" class="bg-slate-800 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-sky-300 border border-slate-700">
+                                    타이틀
+                                </button>
+                                ${item.phone ? `
+                                    <button onclick="copyText('${item.phone}', '전화번호')" class="bg-slate-800 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-slate-300 border border-slate-700">
+                                        번호
                                     </button>
-                                    <a href="tel:${item.phone}" class="bg-emerald-700 hover:bg-emerald-600 active:scale-95 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white shadow flex items-center gap-1">
-                                        <i class="fa-solid fa-phone text-[10px]"></i>
+                                    <a href="tel:${item.phone}" class="bg-emerald-700 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-white shadow flex items-center gap-0.5">
+                                        <i class="fa-solid fa-phone text-[8px]"></i>
                                         <span>통화</span>
                                     </a>
-                                </div>
+                                ` : ''}
                             </div>
-                        ` : `
-                            <div class="text-[11px] text-slate-500 text-center py-1">
-                                전화번호 없음 (운행 마감 지점)
-                            </div>
-                        `}
+                        </div>
                     </div>
                 `;
             });
@@ -460,7 +667,7 @@
             container.innerHTML = html;
         }
 
-        // 초기 실행
+        // 초기 시작: 오전 배송 데이터 로드
         renderCards();
         updateProgress();
     </script>
