@@ -98,16 +98,17 @@
             </div>
         </div>
 
-        <!-- 2행: 과거 회차 보관함 드롭박스 & 하차시간 설정 -->
+        <!-- 2행: 회차 선택 드롭박스 & 하차시간 설정 -->
         <div class="max-w-md mx-auto grid grid-cols-3 gap-1.5 mb-1.5">
-            <!-- 회차 선택 드롭다운 (과거 데이터 드롭박스화) -->
+            <!-- 회차 선택 드롭다운 -->
             <div class="col-span-2 relative">
                 <select id="session-selector" onchange="onSessionChange(this.value)" class="w-full bg-slate-950 border border-sky-500/40 text-white font-bold text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-sky-400 truncate appearance-none pr-7 shadow-inner">
-                    <optgroup label="오늘 / 최근 배송">
-                        <option value="17_pm" selected>17일 오후 (애월 마무리)</option>
-                        <option value="17_am">17일 오전 (이마트 출발/복귀)</option>
+                    <optgroup label="⭐ 오늘 배송 (18일)">
+                        <option value="18_am" selected>18일 오전 (시에나 1번 / 이마트 복귀)</option>
                     </optgroup>
                     <optgroup label="지난 운행 보관함 (과거 기록)">
+                        <option value="17_pm">17일 오후 (애월 마무리)</option>
+                        <option value="17_am">17일 오전 (이마트 출발/복귀)</option>
                         <option value="16_pm">16일 오후 (스프링데일/번영로)</option>
                         <option value="16_am">16일 오전 (대정 우선/이마트)</option>
                     </optgroup>
@@ -115,11 +116,11 @@
                 <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             </div>
 
-            <!-- 하차 기준 시간 드롭다운 (15분 기본) -->
+            <!-- 하차 기준 시간 드롭다운 -->
             <div class="relative">
                 <select id="unload-duration-select" onchange="onUnloadDurationChange(this.value)" class="w-full bg-slate-950 border border-slate-700 text-amber-300 font-bold text-xs rounded-xl px-2 py-1.5 focus:outline-none focus:border-amber-400 appearance-none pr-6 text-center">
                     <option value="10">하차 10분</option>
-                    <option value="13">하차 13분</option>
+                    <option value="12">하차 12분</option>
                     <option value="15" selected>하차 15분</option>
                     <option value="20">하차 20분</option>
                 </select>
@@ -127,26 +128,26 @@
             </div>
         </div>
 
-        <!-- 3행: 실시간 재계산 지표 카드 (완료 누르면 마감 시각 즉시 갱신!) -->
+        <!-- 3행: 실시간 재계산 지표 카드 -->
         <div class="max-w-md mx-auto bg-slate-950/90 border border-slate-800 rounded-xl p-1.5 grid grid-cols-4 gap-1 text-center text-xs">
             <div>
                 <span class="text-[9px] text-slate-400 block font-medium">총 주행거리</span>
-                <strong id="summary-dist" class="text-sky-400 font-mono font-bold text-xs">65.8 km</strong>
+                <strong id="summary-dist" class="text-sky-400 font-mono font-bold text-xs">39.0 km</strong>
             </div>
             <div class="border-l border-slate-800">
                 <span class="text-[9px] text-slate-400 block font-medium">총 물량</span>
-                <strong id="summary-qty" class="text-amber-400 font-mono font-bold text-xs">244 박스</strong>
+                <strong id="summary-qty" class="text-amber-400 font-mono font-bold text-xs">221 박스</strong>
             </div>
             <div class="border-l border-slate-800">
                 <span class="text-[9px] text-slate-400 block font-medium flex items-center justify-center gap-0.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>예상 마감</span>
+                    <span>예상 복귀</span>
                 </span>
-                <strong id="summary-finish" class="text-emerald-400 font-mono font-bold text-xs">16:05</strong>
+                <strong id="summary-finish" class="text-emerald-400 font-mono font-bold text-xs">10:48</strong>
             </div>
             <div class="border-l border-slate-800">
                 <span class="text-[9px] text-slate-400 block font-medium">하차 완료</span>
-                <strong id="summary-progress" class="text-white font-mono font-bold text-xs">0 / 7 (0%)</strong>
+                <strong id="summary-progress" class="text-white font-mono font-bold text-xs">0 / 5 (0%)</strong>
             </div>
         </div>
 
@@ -154,7 +155,7 @@
         <div class="max-w-md mx-auto mt-1.5 flex items-center justify-between gap-1.5">
             <div id="live-status-chip" class="flex-1 bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-lg text-[10px] text-slate-300 truncate flex items-center gap-1.5">
                 <i class="fa-solid fa-clock-rotate-left text-sky-400 text-[10px]"></i>
-                <span id="live-status-text">14:30 기준 타임라인 산출 중</span>
+                <span id="live-status-text">09:00 출발 기준 타임라인 산출 중</span>
             </div>
             <div class="grid grid-cols-2 gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
                 <button onclick="switchView('list')" id="view-btn-list" class="py-1 px-2 rounded text-[11px] font-bold transition bg-sky-600 text-white flex items-center gap-1">
@@ -226,7 +227,7 @@
             </div>
             <div class="space-y-2 text-xs">
                 <p class="text-[11px] text-slate-400">
-                    첫 하차지로 출발한 시각을 설정하시면 전체 스케줄이 역산됩니다.
+                    이마트 상차 후 출차한 시각을 설정하시면 전체 스케줄이 실시간 재계산됩니다.
                 </p>
                 <div class="flex items-center justify-center p-2 bg-slate-950 rounded-xl border border-slate-800">
                     <input type="time" id="input-session-start" class="bg-slate-900 border border-slate-700 text-white font-mono font-bold text-base px-3 py-1.5 rounded-lg focus:outline-none focus:border-sky-500">
@@ -242,11 +243,27 @@
     <script>
         // 거점 정보
         const HUB_EMART = { name: "이마트 서귀포점", address: "서귀포시 일주동로 9209", lat: 33.2471, lon: 126.5098, phone: "064-797-1234" };
-        const HUB_BYEONYEONG = { name: "번영로 528", address: "제주시 번영로 528", lat: 33.4988, lon: 126.6022, phone: "" };
 
-        // 마스터 세션 데이터 (오전 코스는 이마트 서귀포점이 1번 출발지/상차지로 명확히 정의)
+        // 마스터 세션 데이터 (18일 오전 최우선 반영)
         const MASTER_SESSIONS = {
-            // [당일] 17일 오후 (애월 마무리)
+            // [당일] 18일 오전 (시에나 1번 / 이마트 복귀 순환 코스)
+            "18_am": {
+                name: "18일 오전 (시에나 1번 / 이마트 복귀)",
+                isMorning: true,
+                defaultStartTime: "09:00",
+                startHub: HUB_EMART,
+                returnHub: HUB_EMART,
+                stops: [
+                    { id: "18am_hub_start", isStartPoint: true, name: "이마트 서귀포점", address: "서귀포시 일주동로 9209", phone: "064-797-1234", boxQty: "상차 완료", note: "오전 09:00 상차 완료 후 출차 거점", lat: 33.2471, lon: 126.5098, roadKm: 0, driveMin: 0 },
+                    { id: "18am_1", name: "시에나리조트", address: "서귀포시 용흥로66번길 158-8", phone: "010-2037-3467", boxQty: "147박스", note: "★ 1번 선하차 (청정원17호 77, 11호 70 / 적재공간 65% 즉시 확보)", lat: 33.2655, lon: 126.4950, roadKm: 4.2, driveMin: 8, customUnload: 18 },
+                    { id: "18am_2", name: "손대순", address: "서귀포시 중문상로 188-1", phone: "010-3774-8182", boxQty: "10박스", note: "지원식품 매장 앞 (사과 VIP 생과일 10박스)", lat: 33.2678, lon: 126.4385, roadKm: 5.8, driveMin: 9, customUnload: 5 },
+                    { id: "18am_3", name: "부감산업개발", address: "서귀포시 안덕면 산록남로 1241번길 196-15", phone: "010-8214-8911", boxQty: "30박스", note: "산록남로 색달쓰레기 매립장 위쪽 (청정원 종합3호 / 위생장갑 확인)", lat: 33.3105, lon: 126.4020, roadKm: 5.5, driveMin: 9, customUnload: 7 },
+                    { id: "18am_4", name: "호영개발", address: "서귀포시 중문관광로 124", phone: "010-5003-9830", boxQty: "23박스", note: "중문관광단지 지하 커뮤니티센터 앞 (사과16, 복합6, 청정원1)", lat: 33.2435, lon: 126.4255, roadKm: 8.2, driveMin: 12, customUnload: 8 },
+                    { id: "18am_5", name: "성현지", address: "서귀포시 서홍로 84", phone: "010-4693-4434", boxQty: "11박스", note: "서홍동 대로변 (당도선별사과 11박스 완판 하차)", lat: 33.2562, lon: 126.5518, roadKm: 11.5, driveMin: 16, customUnload: 5 },
+                    { id: "18am_hub_end", isEndPoint: true, name: "이마트 서귀포점 (복귀)", address: "서귀포시 일주동로 9209", phone: "064-797-1234", boxQty: "복귀 마감", note: "서홍동에서 3.8km 직진 복귀 (오전 운행 완벽 종료)", lat: 33.2471, lon: 126.5098, roadKm: 3.8, driveMin: 7 }
+                ]
+            },
+            // [보관함] 17일 오후
             "17_pm": {
                 name: "17일 오후 (애월 마무리)",
                 isMorning: false,
@@ -262,7 +279,7 @@
                     { id: "17pm_7", name: "허영하", address: "제주시 애월읍 중산간서로 6132", phone: "010-6672-2238", boxQty: "45박스", note: "장전스카이빌 102호 (CJ 복합 A호 / 최종 마감)", lat: 33.4542, lon: 126.3925, roadKm: 7.8, driveMin: 12 }
                 ]
             },
-            // [당일] 17일 오전 (오전은 이마트 서귀포점이 1번 출발지!)
+            // [보관함] 17일 오전
             "17_am": {
                 name: "17일 오전 (이마트 출발/복귀)",
                 isMorning: true,
@@ -314,19 +331,18 @@
         };
 
         // 앱 런타임 상태
-        let currentSessionKey = "17_pm";
+        let currentSessionKey = "18_am";
         let currentStops = [];
-        let completedMap = {}; // { stopId: true }
-        let completedTimestampMap = {}; // { stopId: "15:20" }
-        let sessionStartTimeStr = "14:30";
-        let fixedUnloadMin = 15; // 기본 15분 고정
+        let completedMap = {};
+        let completedTimestampMap = {};
+        let sessionStartTimeStr = "09:00";
+        let fixedUnloadMin = 15;
         let currentView = "list";
 
         let mapInstance = null;
         let markersLayer = null;
         let routeLine = null;
 
-        // 분 <-> 시:분 유틸리티
         function parseTimeToMinutes(tStr) {
             const parts = tStr.split(':').map(Number);
             return parts[0] * 60 + parts[1];
@@ -343,90 +359,95 @@
             return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         }
 
-        // [핵심] 하차 완료 시각 기준 '향후 일정 실시간 자동 재계산' 엔진
+        // 실시간 일정 재계산 엔진
         function recalculateLiveSchedule() {
             let runningMinutes = parseTimeToMinutes(sessionStartTimeStr);
             let totalKm = 0;
             let totalBoxes = 0;
             let lastCompletedStopName = null;
             let lastCompletedTime = null;
+            let deliverySeqCounter = 1;
 
-            // 순차 계산
-            currentStops.forEach((stop, idx) => {
+            currentStops.forEach((stop) => {
                 const isStartHub = !!stop.isStartPoint;
+                const isEndHub = !!stop.isEndPoint;
+
                 totalKm += (stop.roadKm || 0);
 
-                const qNum = parseInt(stop.boxQty) || 0;
-                totalBoxes += qNum;
+                if (!isStartHub && !isEndHub) {
+                    const qNum = parseInt(stop.boxQty) || 0;
+                    totalBoxes += qNum;
+                }
 
                 const isDone = !!completedMap[stop.id];
                 const recordedDoneTime = completedTimestampMap[stop.id];
 
                 if (isStartHub) {
-                    // 시작 거점(이마트)
                     stop.arrTime = formatMinutesToTime(runningMinutes);
                     stop.deptTime = formatMinutesToTime(runningMinutes);
                     stop.displaySeq = "출";
                     return;
                 }
 
-                // 주행 시간 반영하여 도착 시각 산출
+                if (isEndHub) {
+                    runningMinutes += (stop.driveMin || 7);
+                    stop.arrTime = formatMinutesToTime(runningMinutes);
+                    stop.deptTime = formatMinutesToTime(runningMinutes);
+                    stop.displaySeq = "착";
+                    return;
+                }
+
+                // 일반 배송지
                 runningMinutes += (stop.driveMin || 8);
                 stop.arrTime = formatMinutesToTime(runningMinutes);
-                stop.displaySeq = idx + 1;
+                stop.displaySeq = deliverySeqCounter++;
+
+                const thisUnloadMin = stop.customUnload !== undefined ? stop.customUnload : fixedUnloadMin;
 
                 if (isDone && recordedDoneTime) {
-                    // 이미 완료된 하차지: 실제 완료 시각을 출발 시각으로 고정!
                     stop.deptTime = recordedDoneTime;
                     runningMinutes = parseTimeToMinutes(recordedDoneTime);
                     lastCompletedStopName = stop.name;
                     lastCompletedTime = recordedDoneTime;
                 } else {
-                    // 아직 미완료된 향후 하차지: 현재 누적된 시각에서 15분 하차 후 다음으로 출발!
-                    runningMinutes += fixedUnloadMin;
+                    runningMinutes += thisUnloadMin;
                     stop.deptTime = formatMinutesToTime(runningMinutes);
                 }
             });
 
-            // 최종 마감 시각 산출
             const finishTimeStr = formatMinutesToTime(runningMinutes);
 
-            // 헤더 통계 UI 반영
             document.getElementById('summary-dist').innerText = `${totalKm.toFixed(1)} km`;
             document.getElementById('summary-qty').innerText = `${totalBoxes} 박스`;
             document.getElementById('summary-finish').innerText = finishTimeStr;
 
-            // 실시간 상태 알림 배너 문구 동기화
             const statusTextEl = document.getElementById('live-status-text');
             if (lastCompletedStopName && lastCompletedTime) {
-                statusTextEl.innerHTML = `<b class="text-emerald-400">[${lastCompletedStopName}]</b> ${lastCompletedTime} 완료 기준 실시간 일정 재산출됨`;
+                statusTextEl.innerHTML = `<b class="text-emerald-400">[${lastCompletedStopName}]</b> ${lastCompletedTime} 완료 기준 실시간 재산출됨`;
             } else {
-                statusTextEl.innerText = `${sessionStartTimeStr} 출발 기준 타임라인 산출 중 (하차 ${fixedUnloadMin}분)`;
+                statusTextEl.innerText = `${sessionStartTimeStr} 출발 기준 타임라인 산출 중 (시에나 1번 선하차)`;
             }
 
             updateProgressStat();
         }
 
         function updateProgressStat() {
-            let validStops = currentStops.filter(s => !s.isStartPoint);
+            let validStops = currentStops.filter(s => !s.isStartPoint && !s.isEndPoint);
             let doneCount = validStops.filter(s => !!completedMap[s.id]).length;
             let total = validStops.length;
             let pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
             document.getElementById('summary-progress').innerText = `${doneCount} / ${total} (${pct}%)`;
         }
 
-        // 하차 완료 버튼 터치 시 구동 (현재 시각 기준으로 향후 일정 즉시 재계산!)
         function toggleComplete(stopId) {
             const isCurrentlyDone = !!completedMap[stopId];
 
             if (!isCurrentlyDone) {
-                // 완료 처리: 현재 시각(HH:mm)을 출발 타임스탬프로 즉시 기록!
                 const nowTime = getCurrentTimeStr();
                 completedMap[stopId] = true;
                 completedTimestampMap[stopId] = nowTime;
-                showToast(`하차 완료 기록: ${nowTime} 출발 기준으로 이후 일정이 재계산되었습니다.`);
+                showToast(`하차 완료: ${nowTime} 출발 기준으로 이후 일정이 재계산되었습니다.`);
             } else {
-                // 완료 취소
                 delete completedMap[stopId];
                 delete completedTimestampMap[stopId];
                 showToast(`하차 완료가 취소되어 기본 계획으로 복원되었습니다.`);
@@ -435,20 +456,21 @@
             renderAll();
         }
 
-        // 카드 렌더링
+        // 목록 카드 렌더링
         function renderCards() {
             const container = document.getElementById('container-list');
             let html = '';
 
             currentStops.forEach((item, index) => {
                 const isStartHub = !!item.isStartPoint;
+                const isEndHub = !!item.isEndPoint;
                 const isDone = !!completedMap[item.id];
                 const doneTime = completedTimestampMap[item.id];
-                const isLast = index === currentStops.length - 1 && !isStartHub;
-                const titleStr = isStartHub ? item.name : `${item.displaySeq} ${item.name}`;
+                const isFirstDelivery = item.id === "18am_1";
+                const titleStr = (isStartHub || isEndHub) ? item.name : `${item.displaySeq} ${item.name}`;
 
+                // 1. 출발 거점 카드 (이마트 서귀포점)
                 if (isStartHub) {
-                    // 오전 이마트 서귀포점 1번 출발 거점 카드
                     html += `
                         <div class="rounded-xl p-3 bg-slate-900 border-2 border-rose-500/80 shadow-lg mb-2">
                             <div class="flex justify-between items-center mb-1">
@@ -459,7 +481,7 @@
                                     <div>
                                         <h2 class="font-bold text-sm text-white flex items-center gap-1.5">
                                             <span>${item.name}</span>
-                                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/30">오전 1번 출발지</span>
+                                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/30">상차 및 출발 거점</span>
                                         </h2>
                                         <span class="text-[10px] text-amber-300 font-mono">${item.address}</span>
                                     </div>
@@ -477,22 +499,50 @@
                     return;
                 }
 
-                // 일반 배송지 카드 (하차완료 시 실시간 반영)
+                // 2. 최종 복귀 거점 카드 (이마트 서귀포점 복귀)
+                if (isEndHub) {
+                    html += `
+                        <div class="rounded-xl p-3 bg-slate-900 border-2 border-emerald-500/80 shadow-lg mt-2">
+                            <div class="flex justify-between items-center mb-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-emerald-600 text-slate-950 font-black text-xs flex items-center justify-center shrink-0">
+                                        착
+                                    </span>
+                                    <div>
+                                        <h2 class="font-bold text-sm text-white flex items-center gap-1.5">
+                                            <span>${item.name}</span>
+                                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30">최종 복귀 및 마감</span>
+                                        </h2>
+                                        <span class="text-[10px] text-amber-300 font-mono">${item.address}</span>
+                                    </div>
+                                </div>
+                                <span class="font-mono text-xs font-bold text-emerald-400">${item.arrTime} 복귀 완료</span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 mt-1 flex justify-between items-center border-t border-slate-800 pt-1.5">
+                                <span><i class="fa-solid fa-flag-checkered text-emerald-400 mr-1"></i>${item.note}</span>
+                                <span class="text-[10px] font-mono text-sky-400">서홍동에서 3.8km (7분)</span>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // 3. 일반 배송지 카드
                 html += `
                     <div class="compact-card rounded-xl p-2.5 transition duration-150 ${
                         isDone 
                             ? 'bg-slate-900/40 border-l-emerald-500 border-t border-r border-b border-slate-800 opacity-60' 
-                            : isLast
-                                ? 'bg-slate-900 border-l-amber-500 border-t border-r border-b border-slate-800 shadow-lg ring-1 ring-amber-500/30'
+                            : isFirstDelivery
+                                ? 'bg-slate-900 border-l-rose-500 border-t border-r border-b border-slate-800 shadow-lg ring-1 ring-rose-500/40'
                                 : 'bg-slate-900 border-l-sky-500 border-t border-r border-b border-slate-800 shadow-sm'
                     }">
-                        <!-- 라인 1: 순번, 이름, 수량, 순서이동(▲/▼), 도착예정, 완료버튼 -->
+                        <!-- 라인 1: 순번, 이름, 수량, 순서이동, 도착예정, 완료버튼 -->
                         <div class="flex justify-between items-center mb-1">
                             <div class="flex items-center gap-2 min-w-0 flex-1">
                                 <span class="w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
                                     isDone 
                                         ? 'bg-emerald-500 text-slate-950' 
-                                        : isLast ? 'bg-amber-400 text-slate-950' : 'bg-sky-500 text-slate-950'
+                                        : isFirstDelivery ? 'bg-rose-500 text-white' : 'bg-sky-500 text-slate-950'
                                 }">
                                     ${isDone ? '<i class="fa-solid fa-check text-[10px]"></i>' : item.displaySeq}
                                 </span>
@@ -500,6 +550,7 @@
                                     ${titleStr}
                                 </h2>
                                 <span class="text-[10px] text-amber-400 font-mono font-bold shrink-0">(${item.boxQty})</span>
+                                ${isFirstDelivery ? '<span class="text-[9px] bg-rose-950 text-rose-300 px-1 rounded border border-rose-500/40 font-bold shrink-0">1번 선하차</span>' : ''}
                             </div>
 
                             <div class="flex items-center gap-1.5 shrink-0">
@@ -526,7 +577,7 @@
                                         ? 'bg-emerald-950 border-emerald-500/50 text-emerald-300' 
                                         : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700'
                                 }">
-                                    ${isDone ? '하차완료' : '하차완료'}
+                                    ${isDone ? '완료됨' : '하차완료'}
                                 </button>
                             </div>
                         </div>
@@ -550,7 +601,7 @@
                             </div>
 
                             <div class="flex items-center gap-1 shrink-0">
-                                <button onclick="setAsFirstStop('${item.id}')" class="bg-slate-800 active:scale-95 px-1.5 py-1 rounded text-[10px] font-bold text-amber-300 border border-slate-700" title="첫 번째 하차지로 이동">
+                                <button onclick="setAsFirstStop('${item.id}')" class="bg-slate-800 active:scale-95 px-1.5 py-1 rounded text-[10px] font-bold text-amber-300 border border-slate-700" title="첫 번째 하차지로 지정">
                                     1번지정
                                 </button>
                                 <button onclick="copyText('${titleStr}', '타이틀')" class="bg-slate-800 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-sky-300 border border-slate-700">
@@ -577,7 +628,7 @@
             if (!mapEl) return;
 
             if (!mapInstance) {
-                mapInstance = L.map('map', { zoomControl: false, attributionControl: false }).setView([33.35, 126.42], 10);
+                mapInstance = L.map('map', { zoomControl: false, attributionControl: false }).setView([33.26, 126.46], 12);
                 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapInstance);
                 markersLayer = L.layerGroup().addTo(mapInstance);
             }
@@ -590,28 +641,28 @@
             const currentSession = MASTER_SESSIONS[currentSessionKey];
             const latlngs = [];
 
-            // 거점(이마트) 마커
+            // 거점(이마트 서귀포점) 마커
             const startPt = [currentSession.startHub.lat, currentSession.startHub.lon];
             latlngs.push(startPt);
 
             L.marker(startPt, {
                 icon: L.divIcon({
                     className: 'hub-pin-icon',
-                    html: `<div class="hub-pin" style="background:#e11d48;">출발: ${currentSession.startHub.name}</div>`,
-                    iconSize: [94, 24],
-                    iconAnchor: [47, 12]
+                    html: `<div class="hub-pin" style="background:#e11d48;">출발/복귀: ${currentSession.startHub.name}</div>`,
+                    iconSize: [110, 24],
+                    iconAnchor: [55, 12]
                 })
             }).addTo(markersLayer);
 
             // 배송지 핀들
-            currentStops.forEach((item, idx) => {
-                if (item.isStartPoint) return;
+            currentStops.forEach((item) => {
+                if (item.isStartPoint || item.isEndPoint) return;
                 const pt = [item.lat, item.lon];
                 latlngs.push(pt);
 
                 const isDone = !!completedMap[item.id];
-                const isLast = idx === currentStops.length - 1;
-                const pinColor = isDone ? '#10b981' : (isLast ? '#f59e0b' : '#0ea5e9');
+                const isFirst = item.id === "18am_1";
+                const pinColor = isDone ? '#10b981' : (isFirst ? '#f43f5e' : '#0ea5e9');
 
                 const m = L.marker(pt, {
                     icon: L.divIcon({
@@ -627,6 +678,11 @@
                 });
             });
 
+            // 복귀점 추가
+            if (currentSession.returnHub) {
+                latlngs.push([currentSession.returnHub.lat, currentSession.returnHub.lon]);
+            }
+
             routeLine = L.polyline(latlngs, {
                 color: '#38bdf8',
                 weight: 4,
@@ -639,7 +695,7 @@
                 mapInstance.fitBounds(routeLine.getBounds(), { padding: [35, 35] });
             }, 60);
 
-            const firstDeliverable = currentStops.find(s => !s.isStartPoint);
+            const firstDeliverable = currentStops.find(s => !s.isStartPoint && !s.isEndPoint);
             if (firstDeliverable) {
                 updateMapQuickCard(firstDeliverable);
             }
@@ -665,20 +721,18 @@
             }
         }
 
-        // 순서 위/아래 이동 (-1: 위로, +1: 아래로)
         function moveStop(stopId, direction) {
             const curIdx = currentStops.findIndex(s => s.id === stopId);
             if (curIdx === -1) return;
 
-            // 오전 이마트 같은 시작 거점(isStartPoint)은 이동 불가
             const firstDeliverableIdx = currentStops.findIndex(s => !s.isStartPoint);
+            const lastDeliverableIdx = currentStops.map(s => !s.isEndPoint).lastIndexOf(true);
             const targetIdx = curIdx + direction;
 
-            if (targetIdx < firstDeliverableIdx || targetIdx >= currentStops.length) {
-                return; // 최상단/최하단 경계 초과 방지
+            if (targetIdx < firstDeliverableIdx || targetIdx > lastDeliverableIdx) {
+                return;
             }
 
-            // 스왑
             const temp = currentStops[curIdx];
             currentStops[curIdx] = currentStops[targetIdx];
             currentStops[targetIdx] = temp;
@@ -687,7 +741,6 @@
             showToast(`[${temp.name}] 순서가 변경되었습니다.`);
         }
 
-        // 해당 배송지를 첫 번째 하차지로 즉시 배치
         function setAsFirstStop(stopId) {
             const curIdx = currentStops.findIndex(s => s.id === stopId);
             if (curIdx === -1) return;
@@ -705,15 +758,13 @@
             showToast(`[${selected.name}]이(가) 1번 하차지로 지정되었습니다.`);
         }
 
-        // 기본 추천 순서로 복원
         function resetOriginalOrder() {
             const sessionData = MASTER_SESSIONS[currentSessionKey];
             currentStops = JSON.parse(JSON.stringify(sessionData.stops));
             renderAll();
-            showToast(`배송 순서가 기본 계획으로 복원되었습니다.`);
+            showToast(`배송 순서가 기본 계획(시에나 1번)으로 복원되었습니다.`);
         }
 
-        // 세션 드롭다운 변경 시 구동
         function onSessionChange(newKey) {
             currentSessionKey = newKey;
             const sessionData = MASTER_SESSIONS[newKey];
@@ -728,14 +779,12 @@
             showToast(`[${sessionData.name}] 회차로 전환되었습니다.`);
         }
 
-        // 하차 소요 시간(10, 13, 15, 20분) 변경 시
         function onUnloadDurationChange(val) {
             fixedUnloadMin = parseInt(val, 10);
             renderAll();
-            showToast(`개소당 하차 시간이 ${fixedUnloadMin}분으로 설정되어 일정이 재계산되었습니다.`);
+            showToast(`개소당 기본 하차 시간이 ${fixedUnloadMin}분으로 설정되었습니다.`);
         }
 
-        // 뷰 모드 전환 (목록 / 지도)
         function switchView(viewKey) {
             currentView = viewKey;
             const btnList = document.getElementById('view-btn-list');
@@ -760,7 +809,6 @@
             }
         }
 
-        // 전체 렌더 파이프라인
         function renderAll() {
             recalculateLiveSchedule();
             renderCards();
@@ -769,7 +817,6 @@
             }
         }
 
-        // 모달 관리
         function openTimeAdjustModal() {
             document.getElementById('input-session-start').value = sessionStartTimeStr;
             document.getElementById('modal-time').classList.remove('hidden');
@@ -789,7 +836,6 @@
             }
         }
 
-        // 안전 클립보드 복사 (iFrame 샌드박스 호환)
         function copyText(text, label) {
             const ta = document.createElement('textarea');
             ta.value = text;
@@ -821,6 +867,8 @@
             currentStops.forEach(s => {
                 if (s.isStartPoint) {
                     full += `(출발 거점) ${s.name}: ${s.address}\n`;
+                } else if (s.isEndPoint) {
+                    full += `(최종 복귀) ${s.name}: ${s.address}\n`;
                 } else {
                     full += `${s.displaySeq} ${s.name}: ${s.address} (${s.boxQty}) - ${s.phone || '연락처 없음'}\n`;
                 }
@@ -844,9 +892,9 @@
             }
         });
 
-        // 앱 최초 기동 (17일 오후 기본)
+        // 앱 최초 기동 (18일 오전 기본 로드)
         window.addEventListener('DOMContentLoaded', () => {
-            onSessionChange("17_pm");
+            onSessionChange("18_am");
         });
     </script>
 </body>
