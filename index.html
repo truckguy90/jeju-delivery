@@ -87,6 +87,10 @@
                     <i class="fa-solid fa-stopwatch text-[11px] text-amber-400"></i>
                     <span>기준시간</span>
                 </button>
+                <button onclick="resetOriginalOrder()" class="text-xs bg-slate-800 hover:bg-slate-700 active:scale-95 text-amber-300 font-bold px-2 py-1.5 rounded-xl border border-slate-700 transition flex items-center gap-1" title="원래 순서로 복원">
+                    <i class="fa-solid fa-rotate-left text-[11px]"></i>
+                    <span>순서원복</span>
+                </button>
                 <button onclick="copyAllAddresses()" class="text-xs bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-bold px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 shadow">
                     <i class="fa-regular fa-copy text-xs"></i>
                     <span>전체 복사</span>
@@ -482,7 +486,7 @@
                                 ? 'bg-slate-900 border-l-amber-500 border-t border-r border-b border-slate-800 shadow-lg ring-1 ring-amber-500/30'
                                 : 'bg-slate-900 border-l-sky-500 border-t border-r border-b border-slate-800 shadow-sm'
                     }">
-                        <!-- 라인 1: 순번, 이름, 수량, 도착예정, 완료버튼 -->
+                        <!-- 라인 1: 순번, 이름, 수량, 순서이동(▲/▼), 도착예정, 완료버튼 -->
                         <div class="flex justify-between items-center mb-1">
                             <div class="flex items-center gap-2 min-w-0 flex-1">
                                 <span class="w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
@@ -499,6 +503,16 @@
                             </div>
 
                             <div class="flex items-center gap-1.5 shrink-0">
+                                <!-- 순서 위/아래 이동 버튼 -->
+                                <div class="flex items-center bg-slate-950 rounded-lg border border-slate-800 p-0.5">
+                                    <button onclick="moveStop('${item.id}', -1)" title="순서 위로" class="w-5 h-5 flex items-center justify-center text-[9px] text-slate-300 hover:text-white active:scale-90">
+                                        <i class="fa-solid fa-chevron-up"></i>
+                                    </button>
+                                    <button onclick="moveStop('${item.id}', 1)" title="순서 아래로" class="w-5 h-5 flex items-center justify-center text-[9px] text-slate-300 hover:text-white active:scale-90">
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </button>
+                                </div>
+
                                 <div class="text-right">
                                     <span class="font-mono text-xs font-bold ${isDone ? 'text-emerald-400' : 'text-sky-400'} block">
                                         ${isDone ? `${doneTime} 완료` : `${item.arrTime} 도착`}
@@ -528,7 +542,7 @@
                             </button>
                         </div>
 
-                        <!-- 라인 3: 참고사항 및 퀵 액션 (타이틀 복사, 통화) -->
+                        <!-- 라인 3: 참고사항 및 퀵 액션 (1번지정, 타이틀 복사, 통화) -->
                         <div class="flex items-center justify-between gap-1 text-[10px]">
                             <div class="truncate text-slate-400 flex-1 pr-1">
                                 <i class="fa-solid fa-circle-info text-sky-400 mr-0.5"></i>
@@ -536,6 +550,9 @@
                             </div>
 
                             <div class="flex items-center gap-1 shrink-0">
+                                <button onclick="setAsFirstStop('${item.id}')" class="bg-slate-800 active:scale-95 px-1.5 py-1 rounded text-[10px] font-bold text-amber-300 border border-slate-700" title="첫 번째 하차지로 이동">
+                                    1번지정
+                                </button>
                                 <button onclick="copyText('${titleStr}', '타이틀')" class="bg-slate-800 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-sky-300 border border-slate-700">
                                     타이틀
                                 </button>
@@ -646,6 +663,54 @@
                 telLink.href = '#';
                 telLink.classList.add('opacity-40', 'pointer-events-none');
             }
+        }
+
+        // 순서 위/아래 이동 (-1: 위로, +1: 아래로)
+        function moveStop(stopId, direction) {
+            const curIdx = currentStops.findIndex(s => s.id === stopId);
+            if (curIdx === -1) return;
+
+            // 오전 이마트 같은 시작 거점(isStartPoint)은 이동 불가
+            const firstDeliverableIdx = currentStops.findIndex(s => !s.isStartPoint);
+            const targetIdx = curIdx + direction;
+
+            if (targetIdx < firstDeliverableIdx || targetIdx >= currentStops.length) {
+                return; // 최상단/최하단 경계 초과 방지
+            }
+
+            // 스왑
+            const temp = currentStops[curIdx];
+            currentStops[curIdx] = currentStops[targetIdx];
+            currentStops[targetIdx] = temp;
+
+            renderAll();
+            showToast(`[${temp.name}] 순서가 변경되었습니다.`);
+        }
+
+        // 해당 배송지를 첫 번째 하차지로 즉시 배치
+        function setAsFirstStop(stopId) {
+            const curIdx = currentStops.findIndex(s => s.id === stopId);
+            if (curIdx === -1) return;
+
+            const firstDeliverableIdx = currentStops.findIndex(s => !s.isStartPoint);
+            if (curIdx === firstDeliverableIdx) {
+                showToast(`이미 첫 번째 하차지입니다.`);
+                return;
+            }
+
+            const [selected] = currentStops.splice(curIdx, 1);
+            currentStops.splice(firstDeliverableIdx, 0, selected);
+
+            renderAll();
+            showToast(`[${selected.name}]이(가) 1번 하차지로 지정되었습니다.`);
+        }
+
+        // 기본 추천 순서로 복원
+        function resetOriginalOrder() {
+            const sessionData = MASTER_SESSIONS[currentSessionKey];
+            currentStops = JSON.parse(JSON.stringify(sessionData.stops));
+            renderAll();
+            showToast(`배송 순서가 기본 계획으로 복원되었습니다.`);
         }
 
         // 세션 드롭다운 변경 시 구동
