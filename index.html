@@ -33,6 +33,7 @@
             width: 100% !important;
             height: 100% !important;
             min-height: 100% !important;
+            position: relative;
         }
         #map {
             width: 100% !important;
@@ -72,7 +73,7 @@
 <body class="text-slate-100 flex flex-col select-none">
 
     <!-- 상단 고정 헤더 -->
-    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 px-3 py-2 shadow-xl shrink-0">
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 px-3 py-2 shadow-xl shrink-0">
         <!-- 1행: 타이틀 및 전체 복사 -->
         <div class="max-w-md mx-auto flex justify-between items-center mb-1.5">
             <div>
@@ -104,7 +105,8 @@
             <div class="col-span-2 relative">
                 <select id="session-selector" onchange="onSessionChange(this.value)" class="w-full bg-slate-950 border border-sky-500/40 text-white font-bold text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-sky-400 truncate appearance-none pr-7 shadow-inner">
                     <optgroup label="⭐ 오늘 배송 (18일)">
-                        <option value="18_am" selected>18일 오전 (시에나 1번 / 이마트 복귀)</option>
+                        <option value="18_pm" selected>18일 오후 (탐라모터스 / 시에나CC 마감)</option>
+                        <option value="18_am">18일 오전 (시에나 1번 / 이마트 복귀)</option>
                     </optgroup>
                     <optgroup label="지난 운행 보관함 (과거 기록)">
                         <option value="17_pm">17일 오후 (애월 마무리)</option>
@@ -132,18 +134,18 @@
         <div class="max-w-md mx-auto bg-slate-950/90 border border-slate-800 rounded-xl p-1.5 grid grid-cols-4 gap-1 text-center text-xs">
             <div>
                 <span class="text-[9px] text-slate-400 block font-medium">총 주행거리</span>
-                <strong id="summary-dist" class="text-sky-400 font-mono font-bold text-xs">39.0 km</strong>
+                <strong id="summary-dist" class="text-sky-400 font-mono font-bold text-xs">37.1 km</strong>
             </div>
             <div class="border-l border-slate-800">
                 <span class="text-[9px] text-slate-400 block font-medium">총 물량</span>
-                <strong id="summary-qty" class="text-amber-400 font-mono font-bold text-xs">221 박스</strong>
+                <strong id="summary-qty" class="text-amber-400 font-mono font-bold text-xs">423 박스</strong>
             </div>
             <div class="border-l border-slate-800">
                 <span class="text-[9px] text-slate-400 block font-medium flex items-center justify-center gap-0.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>예상 복귀</span>
+                    <span>예상 마감</span>
                 </span>
-                <strong id="summary-finish" class="text-emerald-400 font-mono font-bold text-xs">10:48</strong>
+                <strong id="summary-finish" class="text-emerald-400 font-mono font-bold text-xs">16:08</strong>
             </div>
             <div class="border-l border-slate-800">
                 <span class="text-[9px] text-slate-400 block font-medium">하차 완료</span>
@@ -155,7 +157,7 @@
         <div class="max-w-md mx-auto mt-1.5 flex items-center justify-between gap-1.5">
             <div id="live-status-chip" class="flex-1 bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-lg text-[10px] text-slate-300 truncate flex items-center gap-1.5">
                 <i class="fa-solid fa-clock-rotate-left text-sky-400 text-[10px]"></i>
-                <span id="live-status-text">09:00 출발 기준 타임라인 산출 중</span>
+                <span id="live-status-text">14:00 출발 기준 타임라인 산출 중</span>
             </div>
             <div class="grid grid-cols-2 gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
                 <button onclick="switchView('list')" id="view-btn-list" class="py-1 px-2 rounded text-[11px] font-bold transition bg-sky-600 text-white flex items-center gap-1">
@@ -184,7 +186,7 @@
         </div>
 
         <!-- 2. 인터랙티브 지도 뷰 -->
-        <div id="container-map" class="w-full h-full relative hidden">
+        <div id="container-map" class="w-full h-full relative hidden flex-1">
             <div id="map"></div>
             <!-- 지도 퀵 카드 -->
             <div id="map-quick-card" class="absolute bottom-4 left-3 right-3 bg-slate-900/95 backdrop-blur border border-slate-700 rounded-2xl p-3 shadow-2xl z-[1000] space-y-2">
@@ -227,7 +229,7 @@
             </div>
             <div class="space-y-2 text-xs">
                 <p class="text-[11px] text-slate-400">
-                    이마트 상차 후 출차한 시각을 설정하시면 전체 스케줄이 실시간 재계산됩니다.
+                    오후 출차 시각을 입력하시면 남은 배송지의 도착 및 최종 마감 시간이 실시간 재계산됩니다.
                 </p>
                 <div class="flex items-center justify-center p-2 bg-slate-950 rounded-xl border border-slate-800">
                     <input type="time" id="input-session-start" class="bg-slate-900 border border-slate-700 text-white font-mono font-bold text-base px-3 py-1.5 rounded-lg focus:outline-none focus:border-sky-500">
@@ -244,9 +246,24 @@
         // 거점 정보
         const HUB_EMART = { name: "이마트 서귀포점", address: "서귀포시 일주동로 9209", lat: 33.2471, lon: 126.5098, phone: "064-797-1234" };
 
-        // 마스터 세션 데이터 (18일 오전 최우선 반영)
+        // 마스터 세션 데이터 (18일 오후 기본 탑재)
         const MASTER_SESSIONS = {
-            // [당일] 18일 오전 (시에나 1번 / 이마트 복귀 순환 코스)
+            // [당일 신규] 18일 오후 (탐라모터스 대량 / 시에나CC 마감)
+            "18_pm": {
+                name: "18일 오후 (탐라모터스 / 시에나CC 마감)",
+                isMorning: false,
+                defaultStartTime: "14:00",
+                startHub: HUB_EMART,
+                stops: [
+                    { id: "18pm_hub_start", isStartPoint: true, name: "이마트 서귀포점", address: "서귀포시 일주동로 9209", phone: "064-797-1234", boxQty: "상차 완료", note: "오후 14:00 상차 완료 후 서홍동 방면 출차", lat: 33.2471, lon: 126.5098, roadKm: 0, driveMin: 0 },
+                    { id: "18pm_1", name: "배소정", address: "서귀포시 서홍로 249-8", phone: "010-3830-5041", boxQty: "30박스", note: "CJ비비고 토종김 5호(5), CJ 스팸복합 S호(25)", lat: 33.2662, lon: 126.5450, roadKm: 4.8, driveMin: 10, customUnload: 8 },
+                    { id: "18pm_2", name: "서귀포충전소", address: "서귀포시 동홍남로 85, 2층", phone: "010-9458-5456", boxQty: "36박스", note: "김용두 / 대상 청정원 S47호 (36박스 / 2층)", lat: 33.2498, lon: 126.5742, roadKm: 3.8, driveMin: 8, customUnload: 10 },
+                    { id: "18pm_3", name: "김도형 (명보포장)", address: "서귀포시 일주동로 8374", phone: "010-2608-0076", boxQty: "40박스", note: "스타벅스 2호 (40박스) / 일주동로변 매장", lat: 33.2655, lon: 126.5992, roadKm: 2.8, driveMin: 6, customUnload: 10 },
+                    { id: "18pm_4", name: "이현선 (탐라모터스)", address: "서귀포시 토평공단로 104", phone: "010-5516-5087", boxQty: "240박스", note: "★ 최대 대량처! (양반김 210, 사과&배 30 / 적재함 80% 소진)", lat: 33.2778, lon: 126.5985, roadKm: 2.2, driveMin: 5, customUnload: 22 },
+                    { id: "18pm_5", name: "더 시에나 CC", address: "제주시 516로 2695", phone: "010-4177-6054", boxQty: "77박스", note: "★ 최종 운행 마감! 516도로 직통 북상 (대상 청정원 종합17호 77박스)", lat: 33.4342, lon: 126.5658, roadKm: 23.5, driveMin: 34, customUnload: 15 }
+                ]
+            },
+            // [당일 오전] 18일 오전
             "18_am": {
                 name: "18일 오전 (시에나 1번 / 이마트 복귀)",
                 isMorning: true,
@@ -331,11 +348,11 @@
         };
 
         // 앱 런타임 상태
-        let currentSessionKey = "18_am";
+        let currentSessionKey = "18_pm";
         let currentStops = [];
         let completedMap = {};
         let completedTimestampMap = {};
-        let sessionStartTimeStr = "09:00";
+        let sessionStartTimeStr = "14:00";
         let fixedUnloadMin = 15;
         let currentView = "list";
 
@@ -425,7 +442,7 @@
             if (lastCompletedStopName && lastCompletedTime) {
                 statusTextEl.innerHTML = `<b class="text-emerald-400">[${lastCompletedStopName}]</b> ${lastCompletedTime} 완료 기준 실시간 재산출됨`;
             } else {
-                statusTextEl.innerText = `${sessionStartTimeStr} 출발 기준 타임라인 산출 중 (시에나 1번 선하차)`;
+                statusTextEl.innerText = `${sessionStartTimeStr} 출발 기준 타임라인 산출 중 (탐라모터스 240박스 하차)`;
             }
 
             updateProgressStat();
@@ -466,7 +483,8 @@
                 const isEndHub = !!item.isEndPoint;
                 const isDone = !!completedMap[item.id];
                 const doneTime = completedTimestampMap[item.id];
-                const isFirstDelivery = item.id === "18am_1";
+                const isBulkStop = item.boxQty && item.boxQty.includes("240");
+                const isFinalStop = index === currentStops.length - 1 && !isEndHub;
                 const titleStr = (isStartHub || isEndHub) ? item.name : `${item.displaySeq} ${item.name}`;
 
                 // 1. 출발 거점 카드 (이마트 서귀포점)
@@ -481,7 +499,7 @@
                                     <div>
                                         <h2 class="font-bold text-sm text-white flex items-center gap-1.5">
                                             <span>${item.name}</span>
-                                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/30">상차 및 출발 거점</span>
+                                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/30">상차 및 출차 거점</span>
                                         </h2>
                                         <span class="text-[10px] text-amber-300 font-mono">${item.address}</span>
                                     </div>
@@ -499,7 +517,7 @@
                     return;
                 }
 
-                // 2. 최종 복귀 거점 카드 (이마트 서귀포점 복귀)
+                // 2. 최종 복귀 거점 카드 (있을 경우)
                 if (isEndHub) {
                     html += `
                         <div class="rounded-xl p-3 bg-slate-900 border-2 border-emerald-500/80 shadow-lg mt-2">
@@ -532,9 +550,11 @@
                     <div class="compact-card rounded-xl p-2.5 transition duration-150 ${
                         isDone 
                             ? 'bg-slate-900/40 border-l-emerald-500 border-t border-r border-b border-slate-800 opacity-60' 
-                            : isFirstDelivery
+                            : isBulkStop
                                 ? 'bg-slate-900 border-l-rose-500 border-t border-r border-b border-slate-800 shadow-lg ring-1 ring-rose-500/40'
-                                : 'bg-slate-900 border-l-sky-500 border-t border-r border-b border-slate-800 shadow-sm'
+                                : isFinalStop
+                                    ? 'bg-slate-900 border-l-amber-500 border-t border-r border-b border-slate-800 shadow-lg'
+                                    : 'bg-slate-900 border-l-sky-500 border-t border-r border-b border-slate-800 shadow-sm'
                     }">
                         <!-- 라인 1: 순번, 이름, 수량, 순서이동, 도착예정, 완료버튼 -->
                         <div class="flex justify-between items-center mb-1">
@@ -542,7 +562,9 @@
                                 <span class="w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
                                     isDone 
                                         ? 'bg-emerald-500 text-slate-950' 
-                                        : isFirstDelivery ? 'bg-rose-500 text-white' : 'bg-sky-500 text-slate-950'
+                                        : isBulkStop 
+                                            ? 'bg-rose-500 text-white' 
+                                            : isFinalStop ? 'bg-amber-400 text-slate-950' : 'bg-sky-500 text-slate-950'
                                 }">
                                     ${isDone ? '<i class="fa-solid fa-check text-[10px]"></i>' : item.displaySeq}
                                 </span>
@@ -550,7 +572,8 @@
                                     ${titleStr}
                                 </h2>
                                 <span class="text-[10px] text-amber-400 font-mono font-bold shrink-0">(${item.boxQty})</span>
-                                ${isFirstDelivery ? '<span class="text-[9px] bg-rose-950 text-rose-300 px-1 rounded border border-rose-500/40 font-bold shrink-0">1번 선하차</span>' : ''}
+                                ${isBulkStop ? '<span class="text-[9px] bg-rose-950 text-rose-300 px-1 rounded border border-rose-500/40 font-bold shrink-0">대량 240박스</span>' : ''}
+                                ${isFinalStop ? '<span class="text-[9px] bg-amber-950 text-amber-300 px-1 rounded border border-amber-500/40 font-bold shrink-0">최종 마감</span>' : ''}
                             </div>
 
                             <div class="flex items-center gap-1.5 shrink-0">
@@ -622,47 +645,62 @@
             container.innerHTML = html;
         }
 
-        // Leaflet 지도 렌더링
-        function renderMap() {
+        // Leaflet 지도 렌더링 엔진 완벽 복원
+        function initMapIfNeeded() {
             const mapEl = document.getElementById('map');
             if (!mapEl) return;
 
             if (!mapInstance) {
-                mapInstance = L.map('map', { zoomControl: false, attributionControl: false }).setView([33.26, 126.46], 12);
-                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapInstance);
+                mapInstance = L.map('map', {
+                    zoomControl: false,
+                    attributionControl: false
+                }).setView([33.35, 126.55], 11);
+
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19
+                }).addTo(mapInstance);
+
                 markersLayer = L.layerGroup().addTo(mapInstance);
             }
+        }
+
+        function renderMap() {
+            initMapIfNeeded();
+            if (!mapInstance || !markersLayer) return;
 
             markersLayer.clearLayers();
             if (routeLine) {
                 mapInstance.removeLayer(routeLine);
+                routeLine = null;
             }
 
             const currentSession = MASTER_SESSIONS[currentSessionKey];
             const latlngs = [];
 
-            // 거점(이마트 서귀포점) 마커
-            const startPt = [currentSession.startHub.lat, currentSession.startHub.lon];
-            latlngs.push(startPt);
+            // 1. 출발 거점 마커 (이마트 서귀포점)
+            if (currentSession.startHub) {
+                const startPt = [currentSession.startHub.lat, currentSession.startHub.lon];
+                latlngs.push(startPt);
 
-            L.marker(startPt, {
-                icon: L.divIcon({
-                    className: 'hub-pin-icon',
-                    html: `<div class="hub-pin" style="background:#e11d48;">출발/복귀: ${currentSession.startHub.name}</div>`,
-                    iconSize: [110, 24],
-                    iconAnchor: [55, 12]
-                })
-            }).addTo(markersLayer);
+                L.marker(startPt, {
+                    icon: L.divIcon({
+                        className: 'hub-pin-icon',
+                        html: `<div class="hub-pin" style="background:#e11d48;"><i class="fa-solid fa-play mr-1 text-[9px]"></i>출발: ${currentSession.startHub.name}</div>`,
+                        iconSize: [120, 24],
+                        iconAnchor: [60, 12]
+                    })
+                }).addTo(markersLayer);
+            }
 
-            // 배송지 핀들
+            // 2. 배송지 핀들
             currentStops.forEach((item) => {
                 if (item.isStartPoint || item.isEndPoint) return;
                 const pt = [item.lat, item.lon];
                 latlngs.push(pt);
 
                 const isDone = !!completedMap[item.id];
-                const isFirst = item.id === "18am_1";
-                const pinColor = isDone ? '#10b981' : (isFirst ? '#f43f5e' : '#0ea5e9');
+                const isBulk = item.boxQty && item.boxQty.includes("240");
+                const pinColor = isDone ? '#10b981' : (isBulk ? '#f43f5e' : '#0ea5e9');
 
                 const m = L.marker(pt, {
                     icon: L.divIcon({
@@ -678,22 +716,37 @@
                 });
             });
 
-            // 복귀점 추가
+            // 3. 복귀 거점 마커 (있을 경우)
             if (currentSession.returnHub) {
-                latlngs.push([currentSession.returnHub.lat, currentSession.returnHub.lon]);
+                const endPt = [currentSession.returnHub.lat, currentSession.returnHub.lon];
+                latlngs.push(endPt);
+
+                L.marker(endPt, {
+                    icon: L.divIcon({
+                        className: 'hub-pin-icon',
+                        html: `<div class="hub-pin" style="background:#059669;"><i class="fa-solid fa-flag-checkered mr-1 text-[9px]"></i>복귀: ${currentSession.returnHub.name}</div>`,
+                        iconSize: [120, 24],
+                        iconAnchor: [60, 12]
+                    })
+                }).addTo(markersLayer);
             }
 
-            routeLine = L.polyline(latlngs, {
-                color: '#38bdf8',
-                weight: 4,
-                opacity: 0.85,
-                dashArray: '5, 5'
-            }).addTo(mapInstance);
+            // 경로선 연결
+            if (latlngs.length > 1) {
+                routeLine = L.polyline(latlngs, {
+                    color: '#38bdf8',
+                    weight: 4,
+                    opacity: 0.85,
+                    dashArray: '6, 6'
+                }).addTo(mapInstance);
 
-            setTimeout(() => {
-                mapInstance.invalidateSize(true);
-                mapInstance.fitBounds(routeLine.getBounds(), { padding: [35, 35] });
-            }, 60);
+                setTimeout(() => {
+                    if (mapInstance && routeLine) {
+                        mapInstance.invalidateSize(true);
+                        mapInstance.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+                    }
+                }, 100);
+            }
 
             const firstDeliverable = currentStops.find(s => !s.isStartPoint && !s.isEndPoint);
             if (firstDeliverable) {
@@ -762,7 +815,7 @@
             const sessionData = MASTER_SESSIONS[currentSessionKey];
             currentStops = JSON.parse(JSON.stringify(sessionData.stops));
             renderAll();
-            showToast(`배송 순서가 기본 계획(시에나 1번)으로 복원되었습니다.`);
+            showToast(`배송 순서가 기본 계획으로 복원되었습니다.`);
         }
 
         function onSessionChange(newKey) {
@@ -803,9 +856,10 @@
                 cList.classList.add('hidden');
                 cMap.classList.remove('hidden');
 
-                requestAnimationFrame(() => {
+                // 지도가 표시되는 시점에 Leaflet 컨테이너 크기를 강제 재연산하여 타일 깨짐/미표시 원천 차단
+                setTimeout(() => {
                     renderMap();
-                });
+                }, 100);
             }
         }
 
@@ -892,11 +946,10 @@
             }
         });
 
-        // 앱 최초 기동 (18일 오전 기본 로드)
+        // 앱 최초 기동 (18일 오후 기본 로드)
         window.addEventListener('DOMContentLoaded', () => {
-            onSessionChange("18_am");
+            onSessionChange("18_pm");
         });
     </script>
 </body>
 </html>
-
