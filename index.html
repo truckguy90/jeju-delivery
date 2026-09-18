@@ -74,27 +74,34 @@
 
     <!-- 상단 고정 헤더 -->
     <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 px-3 py-2 shadow-xl shrink-0">
-        <!-- 1행: 타이틀 및 전체 복사 -->
+        <!-- 1행: 타이틀 및 핵심 조작 버튼 (자동 저장 상태 표시) -->
         <div class="max-w-md mx-auto flex justify-between items-center mb-1.5">
             <div>
-                <span class="text-[10px] font-bold text-sky-400 tracking-wider uppercase block">카카오내비 전용 연동 도구</span>
+                <span class="text-[10px] font-bold text-sky-400 tracking-wider uppercase flex items-center gap-1">
+                    <span>카카오내비 전용 연동</span>
+                    <span class="text-emerald-400 font-mono text-[9px]"><i class="fa-solid fa-floppy-disk"></i> 자동저장 활성</span>
+                </span>
                 <h1 class="text-sm font-black text-white flex items-center gap-1.5">
                     <i class="fa-solid fa-truck-ramp-box text-sky-400"></i>
                     제주 배송 실시간 스케줄러
                 </h1>
             </div>
-            <div class="flex items-center gap-1.5">
-                <button onclick="openTimeAdjustModal()" class="text-xs bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-bold px-2 py-1.5 rounded-xl border border-slate-700 transition flex items-center gap-1">
+            <div class="flex items-center gap-1">
+                <button onclick="openTimeAdjustModal()" class="text-[11px] bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-bold px-1.5 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1" title="출발 기준 시간 변경">
                     <i class="fa-solid fa-stopwatch text-[11px] text-amber-400"></i>
-                    <span>기준시간</span>
+                    <span>시간</span>
                 </button>
-                <button onclick="resetOriginalOrder()" class="text-xs bg-slate-800 hover:bg-slate-700 active:scale-95 text-amber-300 font-bold px-2 py-1.5 rounded-xl border border-slate-700 transition flex items-center gap-1" title="원래 순서로 복원">
-                    <i class="fa-solid fa-rotate-left text-[11px]"></i>
+                <button onclick="resetOriginalOrder()" class="text-[11px] bg-slate-800 hover:bg-slate-700 active:scale-95 text-amber-300 font-bold px-1.5 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1" title="배송 순서 기본값으로 복원">
+                    <i class="fa-solid fa-rotate-left text-[10px]"></i>
                     <span>순서원복</span>
                 </button>
-                <button onclick="copyAllAddresses()" class="text-xs bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-bold px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 shadow">
+                <button onclick="resetCompletedStatus()" class="text-[11px] bg-slate-800 hover:bg-slate-700 active:scale-95 text-rose-300 font-bold px-1.5 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1" title="하차 완료 기록 초기화">
+                    <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
+                    <span>완료초기화</span>
+                </button>
+                <button onclick="copyAllAddresses()" class="text-[11px] bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-bold px-2 py-1.5 rounded-lg transition flex items-center gap-1 shadow">
                     <i class="fa-regular fa-copy text-xs"></i>
-                    <span>전체 복사</span>
+                    <span>전체복사</span>
                 </button>
             </div>
         </div>
@@ -229,7 +236,7 @@
             </div>
             <div class="space-y-2 text-xs">
                 <p class="text-[11px] text-slate-400">
-                    오후 출차 시각을 입력하시면 남은 배송지의 도착 및 최종 마감 시간이 실시간 재계산됩니다.
+                    출차 시각을 입력하시면 남은 배송지의 도착 및 최종 마감 시간이 실시간 재계산됩니다.
                 </p>
                 <div class="flex items-center justify-center p-2 bg-slate-950 rounded-xl border border-slate-800">
                     <input type="time" id="input-session-start" class="bg-slate-900 border border-slate-700 text-white font-mono font-bold text-base px-3 py-1.5 rounded-lg focus:outline-none focus:border-sky-500">
@@ -360,7 +367,71 @@
         let markersLayer = null;
         let routeLine = null;
 
+        // --- 로컬 스토리지 자동 저장 및 복원 엔진 (새로고침 초기화 방지) ---
+        function saveSessionState() {
+            try {
+                localStorage.setItem("jeju_delivery_active_session", currentSessionKey);
+                localStorage.setItem(`jeju_completed_${currentSessionKey}`, JSON.stringify(completedMap));
+                localStorage.setItem(`jeju_timestamps_${currentSessionKey}`, JSON.stringify(completedTimestampMap));
+                localStorage.setItem(`jeju_stops_${currentSessionKey}`, JSON.stringify(currentStops));
+                localStorage.setItem(`jeju_starttime_${currentSessionKey}`, sessionStartTimeStr);
+                localStorage.setItem(`jeju_unload_${currentSessionKey}`, String(fixedUnloadMin));
+            } catch (err) {
+                console.warn("LocalStorage 저장 오류:", err);
+            }
+        }
+
+        function loadSessionState(sessionKey) {
+            currentSessionKey = sessionKey;
+            const sessionData = MASTER_SESSIONS[sessionKey];
+            if (!sessionData) return;
+
+            try {
+                // 1. 하차 완료 맵 복원
+                const savedCompleted = localStorage.getItem(`jeju_completed_${sessionKey}`);
+                completedMap = savedCompleted ? JSON.parse(savedCompleted) : {};
+
+                // 2. 하차 완료 타임스탬프 복원
+                const savedTimestamps = localStorage.getItem(`jeju_timestamps_${sessionKey}`);
+                completedTimestampMap = savedTimestamps ? JSON.parse(savedTimestamps) : {};
+
+                // 3. 재배열된 배송지 순서 복원
+                const savedStops = localStorage.getItem(`jeju_stops_${sessionKey}`);
+                if (savedStops) {
+                    currentStops = JSON.parse(savedStops);
+                } else {
+                    currentStops = JSON.parse(JSON.stringify(sessionData.stops));
+                }
+
+                // 4. 출발 기준 시간 복원
+                const savedStart = localStorage.getItem(`jeju_starttime_${sessionKey}`);
+                sessionStartTimeStr = savedStart || sessionData.defaultStartTime;
+
+                // 5. 기본 하차 소요 시간 복원
+                const savedUnload = localStorage.getItem(`jeju_unload_${sessionKey}`);
+                fixedUnloadMin = savedUnload ? parseInt(savedUnload, 10) : 15;
+            } catch (err) {
+                console.warn("LocalStorage 복원 실패, 기본값 로드:", err);
+                completedMap = {};
+                completedTimestampMap = {};
+                currentStops = JSON.parse(JSON.stringify(sessionData.stops));
+                sessionStartTimeStr = sessionData.defaultStartTime;
+                fixedUnloadMin = 15;
+            }
+
+            // UI 폼 동기화
+            const selEl = document.getElementById('session-selector');
+            if (selEl) selEl.value = sessionKey;
+
+            const unloadEl = document.getElementById('unload-duration-select');
+            if (unloadEl) unloadEl.value = String(fixedUnloadMin);
+
+            const inputStartEl = document.getElementById('input-session-start');
+            if (inputStartEl) inputStartEl.value = sessionStartTimeStr;
+        }
+
         function parseTimeToMinutes(tStr) {
+            if (!tStr) return 840;
             const parts = tStr.split(':').map(Number);
             return parts[0] * 60 + parts[1];
         }
@@ -440,9 +511,9 @@
 
             const statusTextEl = document.getElementById('live-status-text');
             if (lastCompletedStopName && lastCompletedTime) {
-                statusTextEl.innerHTML = `<b class="text-emerald-400">[${lastCompletedStopName}]</b> ${lastCompletedTime} 완료 기준 실시간 재산출됨`;
+                statusTextEl.innerHTML = `<b class="text-emerald-400">[${lastCompletedStopName}]</b> ${lastCompletedTime} 완료 기준 실시간 재산출됨 (저장됨)`;
             } else {
-                statusTextEl.innerText = `${sessionStartTimeStr} 출발 기준 타임라인 산출 중 (탐라모터스 240박스 하차)`;
+                statusTextEl.innerText = `${sessionStartTimeStr} 출발 기준 타임라인 산출 중 (자동 저장 활성)`;
             }
 
             updateProgressStat();
@@ -463,14 +534,33 @@
                 const nowTime = getCurrentTimeStr();
                 completedMap[stopId] = true;
                 completedTimestampMap[stopId] = nowTime;
-                showToast(`하차 완료: ${nowTime} 출발 기준으로 이후 일정이 재계산되었습니다.`);
+                showToast(`하차 완료(${nowTime}) 저장됨. 이후 일정이 재계산되었습니다.`);
             } else {
                 delete completedMap[stopId];
                 delete completedTimestampMap[stopId];
                 showToast(`하차 완료가 취소되어 기본 계획으로 복원되었습니다.`);
             }
 
+            saveSessionState();
             renderAll();
+        }
+
+        function resetCompletedStatus() {
+            const validStops = currentStops.filter(s => !s.isStartPoint && !s.isEndPoint);
+            const doneCount = validStops.filter(s => !!completedMap[s.id]).length;
+
+            if (doneCount === 0) {
+                showToast("초기화할 하차 완료 기록이 없습니다.");
+                return;
+            }
+
+            if (confirm(`현재 회차의 하차 완료 기록(${doneCount}건)을 모두 초기화하시겠습니까?`)) {
+                completedMap = {};
+                completedTimestampMap = {};
+                saveSessionState();
+                renderAll();
+                showToast("하차 완료 기록이 초기화되었습니다.");
+            }
         }
 
         // 목록 카드 렌더링
@@ -645,7 +735,7 @@
             container.innerHTML = html;
         }
 
-        // Leaflet 지도 렌더링 엔진 완벽 복원
+        // Leaflet 지도 렌더링 엔진
         function initMapIfNeeded() {
             const mapEl = document.getElementById('map');
             if (!mapEl) return;
@@ -790,8 +880,9 @@
             currentStops[curIdx] = currentStops[targetIdx];
             currentStops[targetIdx] = temp;
 
+            saveSessionState();
             renderAll();
-            showToast(`[${temp.name}] 순서가 변경되었습니다.`);
+            showToast(`[${temp.name}] 순서 변경 저장됨`);
         }
 
         function setAsFirstStop(stopId) {
@@ -807,35 +898,31 @@
             const [selected] = currentStops.splice(curIdx, 1);
             currentStops.splice(firstDeliverableIdx, 0, selected);
 
+            saveSessionState();
             renderAll();
-            showToast(`[${selected.name}]이(가) 1번 하차지로 지정되었습니다.`);
+            showToast(`[${selected.name}] 1번 지정 저장됨`);
         }
 
         function resetOriginalOrder() {
             const sessionData = MASTER_SESSIONS[currentSessionKey];
             currentStops = JSON.parse(JSON.stringify(sessionData.stops));
+            saveSessionState();
             renderAll();
             showToast(`배송 순서가 기본 계획으로 복원되었습니다.`);
         }
 
         function onSessionChange(newKey) {
-            currentSessionKey = newKey;
-            const sessionData = MASTER_SESSIONS[newKey];
-            currentStops = JSON.parse(JSON.stringify(sessionData.stops));
-            sessionStartTimeStr = sessionData.defaultStartTime;
-            completedMap = {};
-            completedTimestampMap = {};
-
-            document.getElementById('input-session-start').value = sessionStartTimeStr;
-
+            loadSessionState(newKey);
+            saveSessionState();
             renderAll();
-            showToast(`[${sessionData.name}] 회차로 전환되었습니다.`);
+            showToast(`[${MASTER_SESSIONS[newKey].name}] 회차로 전환되었습니다.`);
         }
 
         function onUnloadDurationChange(val) {
             fixedUnloadMin = parseInt(val, 10);
+            saveSessionState();
             renderAll();
-            showToast(`개소당 기본 하차 시간이 ${fixedUnloadMin}분으로 설정되었습니다.`);
+            showToast(`기본 하차 시간 ${fixedUnloadMin}분 설정 저장됨`);
         }
 
         function switchView(viewKey) {
@@ -856,7 +943,6 @@
                 cList.classList.add('hidden');
                 cMap.classList.remove('hidden');
 
-                // 지도가 표시되는 시점에 Leaflet 컨테이너 크기를 강제 재연산하여 타일 깨짐/미표시 원천 차단
                 setTimeout(() => {
                     renderMap();
                 }, 100);
@@ -885,8 +971,9 @@
             if (val) {
                 sessionStartTimeStr = val;
                 closeTimeModal();
+                saveSessionState();
                 renderAll();
-                showToast(`출발 기준 시간이 ${sessionStartTimeStr}로 변경되었습니다.`);
+                showToast(`출발 기준 시간(${sessionStartTimeStr}) 저장됨`);
             }
         }
 
@@ -946,10 +1033,20 @@
             }
         });
 
-        // 앱 최초 기동 (18일 오후 기본 로드)
+        // 앱 최초 기동 (저장된 세션 및 하차 완료 기록 자동 복원)
         window.addEventListener('DOMContentLoaded', () => {
-            onSessionChange("18_pm");
+            let initialSession = "18_pm";
+            try {
+                const savedActive = localStorage.getItem("jeju_delivery_active_session");
+                if (savedActive && MASTER_SESSIONS[savedActive]) {
+                    initialSession = savedActive;
+                }
+            } catch (e) {}
+
+            loadSessionState(initialSession);
+            renderAll();
         });
     </script>
 </body>
 </html>
+
