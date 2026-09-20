@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>제주 배송 실시간 도로망 스케줄러</title>
+    <title>제주 배송 둥글둥글 스케줄러</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icon CDN -->
@@ -18,8 +18,8 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #020617;
-            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+            background-color: #090d16;
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
         .no-scrollbar::-webkit-scrollbar {
@@ -32,148 +32,163 @@
         #container-map {
             width: 100% !important;
             height: 100% !important;
-            min-height: 100% !important;
             position: relative;
         }
         #map {
             width: 100% !important;
             height: 100% !important;
-            background-color: #0b1329;
+            background-color: #0b1120;
         }
+        /* 동글동글 젤리 마커 핀 */
         .map-pin {
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
+            border-radius: 9999px;
             color: #ffffff;
             font-weight: 900;
             font-size: 12px;
-            border: 2px solid #ffffff;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
-            transition: transform 0.15s ease-in-out;
+            border: 2.5px solid #ffffff;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .map-pin:hover {
+            transform: scale(1.15);
         }
         .hub-pin {
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 8px;
+            border-radius: 9999px;
             color: #ffffff;
             font-weight: 900;
             font-size: 11px;
             border: 2px solid #ffffff;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.6);
-            padding: 3px 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            padding: 4px 10px;
             white-space: nowrap;
         }
-        .compact-card {
-            border-left-width: 4px;
+        /* 몽글몽글 소프트 카드 섀도우 */
+        .bubbly-card {
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.35);
+            transition: all 0.2s ease;
+        }
+        .bubbly-btn {
+            border-radius: 0.85rem;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .bubbly-btn:active {
+            transform: scale(0.93);
         }
     </style>
 </head>
 <body class="text-slate-100 flex flex-col select-none">
 
     <!-- 상단 고정 헤더 -->
-    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 px-3 py-2 shadow-xl shrink-0">
-        <!-- 1행: 타이틀 및 핵심 조작 버튼 (자동 저장 및 도로망 연동 상태 표시) -->
+    <header class="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3 py-2 shadow-xl shrink-0">
+        <!-- 1행: 타이틀 및 핵심 조작 캡슐 버튼들 -->
         <div class="max-w-md mx-auto flex justify-between items-center mb-1.5">
             <div>
-                <span class="text-[10px] font-bold text-sky-400 tracking-wider uppercase flex items-center gap-1.5">
-                    <span id="routing-engine-badge" class="text-emerald-400 font-mono text-[9px] flex items-center gap-1">
-                        <i class="fa-solid fa-route"></i> 실제 도로망 내비 연동
+                <span class="text-[9.5px] font-bold text-sky-400 tracking-wider uppercase flex items-center gap-1">
+                    <span id="routing-engine-badge" class="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1 border border-emerald-500/30">
+                        <i class="fa-solid fa-route text-[8px]"></i> 실제도로망 연동
                     </span>
-                    <span class="text-slate-500 font-mono text-[9px]">• 로컬 자동저장</span>
+                    <span class="text-slate-400 font-bold">• 자동저장</span>
                 </span>
-                <h1 class="text-sm font-black text-white flex items-center gap-1.5">
-                    <i class="fa-solid fa-truck-ramp-box text-sky-400"></i>
+                <h1 class="text-sm font-black text-white flex items-center gap-1.5 mt-0.5">
+                    <span class="w-5 h-5 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center text-[10px] text-white shadow-sm">
+                        🚚
+                    </span>
                     제주 배송 실시간 도로 스케줄러
                 </h1>
             </div>
             <div class="flex items-center gap-1">
-                <button onclick="openTimeAdjustModal()" class="text-[11px] bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-bold px-1.5 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1" title="출발 기준 시간 변경">
-                    <i class="fa-solid fa-stopwatch text-[11px] text-amber-400"></i>
+                <button onclick="openTimeAdjustModal()" class="bubbly-btn text-[11px] bg-slate-800/90 hover:bg-slate-700 text-amber-300 font-black px-2 py-1.5 rounded-xl border border-slate-700/80 shadow-sm flex items-center gap-1" title="출발 기준 시간 변경">
+                    <i class="fa-solid fa-clock text-amber-400 text-[10px]"></i>
                     <span>시간</span>
                 </button>
-                <button onclick="resetOriginalOrder()" class="text-[11px] bg-slate-800 hover:bg-slate-700 active:scale-95 text-amber-300 font-bold px-1.5 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1" title="배송 순서 기본값으로 복원">
+                <button onclick="openConfirmModal('order')" class="bubbly-btn text-[11px] bg-slate-800/90 hover:bg-slate-700 text-sky-300 font-black px-2 py-1.5 rounded-xl border border-slate-700/80 shadow-sm flex items-center gap-1" title="배송 순서 기본값으로 복원">
                     <i class="fa-solid fa-rotate-left text-[10px]"></i>
-                    <span>순서원복</span>
+                    <span>원복</span>
                 </button>
-                <button onclick="resetCompletedStatus()" class="text-[11px] bg-slate-800 hover:bg-slate-700 active:scale-95 text-rose-300 font-bold px-1.5 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1" title="하차 완료 기록 초기화">
+                <button onclick="openConfirmModal('completed')" class="bubbly-btn text-[11px] bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 font-black px-2 py-1.5 rounded-xl border border-rose-500/40 shadow-sm flex items-center gap-1" title="하차 완료 기록 초기화">
                     <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
-                    <span>완료초기화</span>
+                    <span>초기화</span>
                 </button>
-                <button onclick="copyAllAddresses()" class="text-[11px] bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-bold px-2 py-1.5 rounded-lg transition flex items-center gap-1 shadow">
-                    <i class="fa-regular fa-copy text-xs"></i>
-                    <span>전체복사</span>
+                <button onclick="copyAllAddresses()" class="bubbly-btn text-[11px] bg-gradient-to-r from-sky-500 to-blue-600 hover:brightness-110 text-white font-black px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 shadow-md shadow-sky-500/20">
+                    <i class="fa-solid fa-copy text-[10px]"></i>
+                    <span>전체</span>
                 </button>
             </div>
         </div>
 
-        <!-- 2행: 회차 선택 드롭박스 & 하차시간 설정 -->
+        <!-- 2행: 동글동글 회차 선택 & 하차시간 캡슐 드롭박스 -->
         <div class="max-w-md mx-auto grid grid-cols-3 gap-1.5 mb-1.5">
-            <!-- 회차 선택 드롭다운 -->
+            <!-- 회차 선택 -->
             <div class="col-span-2 relative">
-                <select id="session-selector" onchange="onSessionChange(this.value)" class="w-full bg-slate-950 border border-sky-500/40 text-white font-bold text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-sky-400 truncate appearance-none pr-7 shadow-inner">
+                <select id="session-selector" onchange="onSessionChange(this.value)" class="w-full bg-slate-950/90 border border-sky-500/40 text-white font-bold text-xs rounded-2xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-400 truncate appearance-none pr-8 shadow-inner">
                     <optgroup label="⭐ 오늘 배송 (18일)">
                         <option value="18_pm" selected>18일 오후 (탐라모터스 / 시에나CC 마감)</option>
                         <option value="18_am">18일 오전 (시에나 1번 / 이마트 복귀)</option>
                     </optgroup>
-                    <optgroup label="지난 운행 보관함 (과거 기록)">
+                    <optgroup label="📦 지난 운행 보관함">
                         <option value="17_pm">17일 오후 (애월 마무리)</option>
                         <option value="17_am">17일 오전 (이마트 출발/복귀)</option>
                         <option value="16_pm">16일 오후 (스프링데일/번영로)</option>
                         <option value="16_am">16일 오전 (대정 우선/이마트)</option>
                     </optgroup>
                 </select>
-                <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                <i class="fa-solid fa-chevron-down text-sky-400 text-[10px] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             </div>
 
-            <!-- 하차 기준 시간 드롭다운 -->
+            <!-- 하차 기준 시간 -->
             <div class="relative">
-                <select id="unload-duration-select" onchange="onUnloadDurationChange(this.value)" class="w-full bg-slate-950 border border-slate-700 text-amber-300 font-bold text-xs rounded-xl px-2 py-1.5 focus:outline-none focus:border-amber-400 appearance-none pr-6 text-center">
+                <select id="unload-duration-select" onchange="onUnloadDurationChange(this.value)" class="w-full bg-slate-950/90 border border-amber-500/40 text-amber-300 font-black text-xs rounded-2xl px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 appearance-none pr-6 text-center shadow-inner">
                     <option value="10">하차 10분</option>
                     <option value="12">하차 12분</option>
                     <option value="15" selected>하차 15분</option>
                     <option value="20">하차 20분</option>
                 </select>
-                <i class="fa-solid fa-angle-down text-slate-400 text-[9px] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                <i class="fa-solid fa-angle-down text-amber-400 text-[9px] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             </div>
         </div>
 
-        <!-- 3행: 실시간 재계산 지표 카드 -->
-        <div class="max-w-md mx-auto bg-slate-950/90 border border-slate-800 rounded-xl p-1.5 grid grid-cols-4 gap-1 text-center text-xs">
-            <div>
+        <!-- 3행: 몽글몽글 실시간 지표 캡슐 바 -->
+        <div class="max-w-md mx-auto bg-slate-950/90 border border-slate-800/90 rounded-2xl p-1.5 grid grid-cols-4 gap-1 text-center text-xs shadow-inner">
+            <div class="p-0.5">
                 <span class="text-[9px] text-slate-400 block font-medium">실제 도로주행</span>
-                <strong id="summary-dist" class="text-sky-400 font-mono font-bold text-xs">계산 중...</strong>
+                <strong id="summary-dist" class="text-sky-400 font-mono font-black text-xs">계산 중...</strong>
             </div>
-            <div class="border-l border-slate-800">
+            <div class="border-l border-slate-800/80 p-0.5">
                 <span class="text-[9px] text-slate-400 block font-medium">총 물량</span>
-                <strong id="summary-qty" class="text-amber-400 font-mono font-bold text-xs">423 박스</strong>
+                <strong id="summary-qty" class="text-amber-400 font-mono font-black text-xs">423 박스</strong>
             </div>
-            <div class="border-l border-slate-800">
-                <span class="text-[9px] text-slate-400 block font-medium flex items-center justify-center gap-0.5">
+            <div class="border-l border-slate-800/80 p-0.5">
+                <span class="text-[9px] text-slate-400 block font-medium flex items-center justify-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span>예상 마감</span>
                 </span>
-                <strong id="summary-finish" class="text-emerald-400 font-mono font-bold text-xs">계산 중...</strong>
+                <strong id="summary-finish" class="text-emerald-400 font-mono font-black text-xs">계산 중...</strong>
             </div>
-            <div class="border-l border-slate-800">
+            <div class="border-l border-slate-800/80 p-0.5">
                 <span class="text-[9px] text-slate-400 block font-medium">하차 완료</span>
-                <strong id="summary-progress" class="text-white font-mono font-bold text-xs">0 / 5 (0%)</strong>
+                <strong id="summary-progress" class="text-white font-mono font-black text-xs">0 / 5 (0%)</strong>
             </div>
         </div>
 
-        <!-- 4행: 실시간 도로 상태 알림 배너 & 뷰 모드 스위치 -->
+        <!-- 4행: 알림 배너 & 둥근 뷰 모드 스위치 -->
         <div class="max-w-md mx-auto mt-1.5 flex items-center justify-between gap-1.5">
-            <div id="live-status-chip" class="flex-1 bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-lg text-[10px] text-slate-300 truncate flex items-center gap-1.5">
+            <div id="live-status-chip" class="flex-1 bg-slate-950/80 border border-slate-800/80 px-3 py-1 rounded-full text-[10px] text-slate-300 truncate flex items-center gap-1.5 shadow-sm">
                 <i id="route-status-icon" class="fa-solid fa-road text-sky-400 text-[10px]"></i>
                 <span id="live-status-text">실제 도로망 기반 주행 동선 분석 중...</span>
             </div>
-            <div class="grid grid-cols-2 gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
-                <button onclick="switchView('list')" id="view-btn-list" class="py-1 px-2 rounded text-[11px] font-bold transition bg-sky-600 text-white flex items-center gap-1">
+            <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-full border border-slate-800/90 shrink-0">
+                <button onclick="switchView('list')" id="view-btn-list" class="py-1 px-2.5 rounded-full text-[11px] font-bold transition bg-gradient-to-r from-sky-500 to-blue-600 text-white flex items-center gap-1 shadow">
                     <i class="fa-solid fa-list-check text-[10px]"></i>
                     <span>목록</span>
                 </button>
-                <button onclick="switchView('map')" id="view-btn-map" class="py-1 px-2 rounded text-[11px] font-bold transition text-slate-400 hover:text-white flex items-center gap-1">
+                <button onclick="switchView('map')" id="view-btn-map" class="py-1 px-2.5 rounded-full text-[11px] font-bold transition text-slate-400 hover:text-white flex items-center gap-1">
                     <i class="fa-solid fa-map text-[10px]"></i>
                     <span>지도</span>
                 </button>
@@ -181,42 +196,45 @@
         </div>
     </header>
 
-    <!-- 복사 알림 토스트 -->
-    <div id="toast" class="fixed top-28 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-2xl flex items-center gap-1.5 opacity-0 pointer-events-none transition-opacity duration-200">
-        <i class="fa-solid fa-check text-xs"></i>
+    <!-- 귀여운 복사 알림 토스트 -->
+    <div id="toast" class="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-black px-4 py-2 rounded-full shadow-2xl flex items-center gap-1.5 opacity-0 pointer-events-none transition-all duration-200 scale-90">
+        <span class="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">✓</span>
         <span id="toast-text">복사되었습니다.</span>
     </div>
 
     <!-- 메인 컨테이너 -->
     <main class="flex-1 max-w-md w-full mx-auto relative overflow-hidden flex flex-col min-h-0">
         <!-- 1. 목록 뷰 -->
-        <div id="container-list" class="flex-1 w-full h-full p-2.5 space-y-2 overflow-y-auto pb-28">
+        <div id="container-list" class="flex-1 w-full h-full p-2.5 space-y-2.5 overflow-y-auto pb-24 no-scrollbar">
             <!-- JS 동적 렌더링 -->
         </div>
 
-        <!-- 2. 인터랙티브 지도 뷰 (실제 도로 곡선 경로선 렌더링) -->
+        <!-- 2. 인터랙티브 지도 뷰 -->
         <div id="container-map" class="w-full h-full relative hidden flex-1">
             <div id="map"></div>
-            <!-- 지도 퀵 카드 -->
-            <div id="map-quick-card" class="absolute bottom-4 left-3 right-3 bg-slate-900/95 backdrop-blur border border-slate-700 rounded-2xl p-3 shadow-2xl z-[1000] space-y-2">
+            <!-- 지도 퀵 카드 (동글동글 귀여운 바텀 시트) -->
+            <div id="map-quick-card" class="absolute bottom-3 left-3 right-3 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-3xl p-3.5 shadow-2xl z-[1000] space-y-2">
                 <div class="flex justify-between items-start">
-                    <div class="flex items-center gap-2 min-w-0 flex-1 pr-2">
-                        <span id="mq-badge" class="w-6 h-6 rounded-full bg-sky-500 text-slate-950 font-black text-xs flex items-center justify-center shrink-0">1</span>
+                    <div class="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                        <span id="mq-badge" class="w-7 h-7 rounded-full bg-gradient-to-tr from-sky-400 to-blue-500 text-slate-950 font-black text-xs flex items-center justify-center shrink-0 shadow-md">1</span>
                         <div class="min-w-0">
-                            <h3 id="mq-title" class="text-sm font-bold text-white truncate">배송지명</h3>
+                            <h3 id="mq-title" class="text-sm font-black text-white truncate">배송지명</h3>
                             <span id="mq-addr" class="text-[10px] text-amber-300 font-mono block truncate">주소</span>
                         </div>
                     </div>
-                    <span id="mq-time" class="text-xs font-mono font-bold text-sky-400 bg-slate-800 px-2 py-0.5 rounded shrink-0">00:00 도착</span>
+                    <span id="mq-time" class="text-xs font-mono font-black text-sky-300 bg-sky-950/80 border border-sky-500/30 px-2.5 py-0.5 rounded-full shrink-0">00:00 도착</span>
                 </div>
-                <div class="grid grid-cols-3 gap-1.5 pt-1">
-                    <button id="mq-btn-title" class="bg-slate-800 active:scale-95 py-1.5 rounded-lg text-xs font-bold text-sky-300 border border-slate-700">
-                        타이틀 복사
+                <!-- 지도 퀵카드: 주소 복사 바로 옆에 타이틀 복사 나란히 배치! -->
+                <div class="grid grid-cols-3 gap-1.5 pt-0.5">
+                    <button id="mq-btn-title" class="bubbly-btn bg-violet-600/90 hover:bg-violet-500 py-2 rounded-2xl text-xs font-black text-white shadow flex items-center justify-center gap-1">
+                        <i class="fa-regular fa-copy text-[10px]"></i>
+                        <span>타이틀</span>
                     </button>
-                    <button id="mq-btn-addr" class="bg-sky-600 active:scale-95 py-1.5 rounded-lg text-xs font-bold text-white shadow">
-                        주소 복사
+                    <button id="mq-btn-addr" class="bubbly-btn bg-sky-500 hover:bg-sky-400 py-2 rounded-2xl text-xs font-black text-white shadow flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-location-arrow text-[10px]"></i>
+                        <span>주소 복사</span>
                     </button>
-                    <a id="mq-btn-tel" href="#" class="bg-emerald-700 active:scale-95 py-1.5 rounded-lg text-xs font-bold text-white text-center flex items-center justify-center gap-1 shadow">
+                    <a id="mq-btn-tel" href="#" class="bubbly-btn bg-emerald-600 hover:bg-emerald-500 py-2 rounded-2xl text-xs font-black text-white text-center flex items-center justify-center gap-1 shadow">
                         <i class="fa-solid fa-phone text-[10px]"></i>
                         <span>통화</span>
                     </a>
@@ -225,28 +243,45 @@
         </div>
     </main>
 
-    <!-- 기준 시간 수동 변경 모달 -->
-    <div id="modal-time" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-xs p-4 space-y-3 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
-                    <i class="fa-solid fa-clock text-amber-400"></i> 출발 기준 시간 설정
+    <!-- 1. 기준 시간 수동 변경 모달 -->
+    <div id="modal-time" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-xs p-4 space-y-3.5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                <h3 class="font-black text-sm text-white flex items-center gap-1.5">
+                    <span class="text-amber-400">⏱️</span> 출발 기준 시간 설정
                 </h3>
-                <button onclick="closeTimeModal()" class="text-slate-400 hover:text-white text-base">
+                <button onclick="closeTimeModal()" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             <div class="space-y-2 text-xs">
-                <p class="text-[11px] text-slate-400">
-                    출차 시각을 입력하시면 남은 배송지의 도착 및 최종 마감 시간이 실시간 재계산됩니다.
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    출차 시각을 입력하시면 남은 배송지의 도착 및 최종 마감 시간이 실시간 연쇄 재계산됩니다.
                 </p>
-                <div class="flex items-center justify-center p-2 bg-slate-950 rounded-xl border border-slate-800">
-                    <input type="time" id="input-session-start" class="bg-slate-900 border border-slate-700 text-white font-mono font-bold text-base px-3 py-1.5 rounded-lg focus:outline-none focus:border-sky-500">
+                <div class="flex items-center justify-center p-2.5 bg-slate-950 rounded-2xl border border-slate-800">
+                    <input type="time" id="input-session-start" class="bg-slate-900 border border-slate-700 text-white font-mono font-black text-base px-4 py-1.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400">
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800">
-                <button onclick="closeTimeModal()" class="py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">취소</button>
-                <button onclick="applySessionStartTime()" class="py-2 bg-sky-600 text-white rounded-xl text-xs font-bold shadow">적용하기</button>
+                <button onclick="closeTimeModal()" class="bubbly-btn py-2 bg-slate-800 text-slate-300 rounded-2xl text-xs font-bold">취소</button>
+                <button onclick="applySessionStartTime()" class="bubbly-btn py-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-sky-500/25">적용하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 커스텀 확인 모달 (confirm 대체: iFrame 샌드박스 안전) -->
+    <div id="modal-confirm" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-xs p-4 space-y-3.5 shadow-2xl">
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
+                <span id="confirm-modal-icon" class="text-rose-400 text-base">⚠️</span>
+                <h3 id="confirm-modal-title" class="font-black text-sm text-white">확인</h3>
+            </div>
+            <p id="confirm-modal-desc" class="text-xs text-slate-300 leading-relaxed">
+                진행하시겠습니까?
+            </p>
+            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800">
+                <button onclick="closeConfirmModal()" class="bubbly-btn py-2 bg-slate-800 text-slate-300 rounded-2xl text-xs font-bold">취소</button>
+                <button id="confirm-modal-action-btn" class="bubbly-btn py-2 bg-rose-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-rose-600/25">실행하기</button>
             </div>
         </div>
     </div>
@@ -368,10 +403,10 @@
         let mapInstance = null;
         let markersLayer = null;
         let routeLine = null;
-
-        // 도로망 라우팅 캐시 및 실제 도로 정보
         let actualRoutePolylineData = null;
-        let isRoutingLoading = false;
+
+        // confirm 모달 콜백 핸들러
+        let confirmActionHandler = null;
 
         // --- 로컬 스토리지 자동 저장 및 복원 엔진 ---
         function saveSessionState() {
@@ -429,7 +464,6 @@
             const inputStartEl = document.getElementById('input-session-start');
             if (inputStartEl) inputStartEl.value = sessionStartTimeStr;
 
-            // 세션 전환 시 라우팅 캐시 초기화
             actualRoutePolylineData = null;
         }
 
@@ -450,12 +484,9 @@
             return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         }
 
-        // --- ★ 핵심 기능: 실제 도로망 내비게이션 라우팅 엔진 (OSRM API) ---
+        // --- 실제 도로망 내비게이션 라우팅 엔진 (OSRM API) ---
         async function fetchActualRoadRoute(waypoints) {
-            // waypoints: [[lat, lon], [lat, lon], ...]
             if (waypoints.length < 2) return null;
-
-            // OSRM 좌표 형식: {lon},{lat};{lon},{lat}...
             const coordsParam = waypoints.map(pt => `${pt[1].toFixed(5)},${pt[0].toFixed(5)}`).join(';');
             const url = `https://router.project-osrm.org/route/v1/driving/${coordsParam}?overview=full&geometries=geojson&steps=false`;
 
@@ -466,20 +497,12 @@
 
                 if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
                     const route = data.routes[0];
-                    // GeoJSON coordinates는 [lon, lat] 형태이므로 Leaflet용 [lat, lon]으로 변환
                     const roadPath = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
                     const actualKm = route.distance / 1000;
                     const rawDriveMin = Math.round(route.duration / 60);
+                    const adjustedDriveMin = Math.round(rawDriveMin * 1.15); // 1톤 탑차 보정
 
-                    // 1톤 화물탑차 도로 계수(K_road * K_cargo ≈ 1.15) 보정
-                    const adjustedDriveMin = Math.round(rawDriveMin * 1.15);
-
-                    return {
-                        roadPath,
-                        actualKm,
-                        adjustedDriveMin,
-                        rawDriveMin
-                    };
+                    return { roadPath, actualKm, adjustedDriveMin };
                 }
             } catch (err) {
                 console.warn("실제 도로 라우팅 API 호출 실패 (오프라인/제한), 실측 데이터 대체:", err);
@@ -525,7 +548,6 @@
                     return;
                 }
 
-                // 일반 배송지
                 runningMinutes += (stop.driveMin || 8);
                 stop.arrTime = formatMinutesToTime(runningMinutes);
                 stop.displaySeq = deliverySeqCounter++;
@@ -545,7 +567,6 @@
 
             const finishTimeStr = formatMinutesToTime(runningMinutes);
 
-            // 실제 도로 라우팅이 완료되어 있으면 그 거리로 표기
             if (actualRoutePolylineData && actualRoutePolylineData.actualKm) {
                 document.getElementById('summary-dist').innerText = `${actualRoutePolylineData.actualKm.toFixed(1)} km`;
             } else {
@@ -557,7 +578,7 @@
 
             const statusTextEl = document.getElementById('live-status-text');
             if (lastCompletedStopName && lastCompletedTime) {
-                statusTextEl.innerHTML = `<b class="text-emerald-400">[${lastCompletedStopName}]</b> ${lastCompletedTime} 완료 기준 실시간 재산출됨`;
+                statusTextEl.innerHTML = `<b class="text-emerald-400">[${lastCompletedStopName}]</b> ${lastCompletedTime} 완료 기준 실시간 재계산됨 ✨`;
             } else {
                 statusTextEl.innerText = `${sessionStartTimeStr} 출발 기준 실제 도로 타임라인 산출 중`;
             }
@@ -580,36 +601,18 @@
                 const nowTime = getCurrentTimeStr();
                 completedMap[stopId] = true;
                 completedTimestampMap[stopId] = nowTime;
-                showToast(`하차 완료(${nowTime}) 저장됨. 이후 일정이 재계산되었습니다.`);
+                showToast(`하차 완료 (${nowTime}) 저장! 일정이 재계산되었습니다.`);
             } else {
                 delete completedMap[stopId];
                 delete completedTimestampMap[stopId];
-                showToast(`하차 완료가 취소되어 기본 계획으로 복원되었습니다.`);
+                showToast(`하차 완료 취소됨! 기본 일정으로 복원되었습니다.`);
             }
 
             saveSessionState();
             renderAll();
         }
 
-        function resetCompletedStatus() {
-            const validStops = currentStops.filter(s => !s.isStartPoint && !s.isEndPoint);
-            const doneCount = validStops.filter(s => !!completedMap[s.id]).length;
-
-            if (doneCount === 0) {
-                showToast("초기화할 하차 완료 기록이 없습니다.");
-                return;
-            }
-
-            if (confirm(`현재 회차의 하차 완료 기록(${doneCount}건)을 모두 초기화하시겠습니까?`)) {
-                completedMap = {};
-                completedTimestampMap = {};
-                saveSessionState();
-                renderAll();
-                showToast("하차 완료 기록이 초기화되었습니다.");
-            }
-        }
-
-        // 목록 카드 렌더링
+        // --- 몽글몽글 귀여운 카드 렌더링 (주소 복사 바로 옆에 타이틀 복사 나란히 배치!) ---
         function renderCards() {
             const container = document.getElementById('container-list');
             let html = '';
@@ -626,27 +629,32 @@
                 // 1. 출발 거점 카드
                 if (isStartHub) {
                     html += `
-                        <div class="rounded-xl p-3 bg-slate-900 border-2 border-rose-500/80 shadow-lg mb-2">
-                            <div class="flex justify-between items-center mb-1">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-6 h-6 rounded-full bg-rose-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                        <div class="bubbly-card p-3.5 bg-slate-900 border-2 border-rose-500/80 shadow-lg mb-2 relative overflow-hidden">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-7 h-7 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-md">
                                         출
                                     </span>
                                     <div>
-                                        <h2 class="font-bold text-sm text-white flex items-center gap-1.5">
+                                        <h2 class="font-black text-sm text-white flex items-center gap-1.5">
                                             <span>${item.name}</span>
-                                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/30">상차 및 출차 거점</span>
+                                            <span class="text-[9.5px] px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-500/40 font-bold">출차 거점</span>
                                         </h2>
-                                        <span class="text-[10px] text-amber-300 font-mono">${item.address}</span>
+                                        <span class="text-[10px] text-amber-300 font-mono font-bold">${item.address}</span>
                                     </div>
                                 </div>
-                                <span class="font-mono text-xs font-bold text-rose-400">${item.deptTime} 출차</span>
+                                <span class="font-mono text-xs font-black text-rose-400 bg-rose-950/50 px-2 py-1 rounded-full border border-rose-500/30">${item.deptTime} 출차</span>
                             </div>
-                            <div class="text-[11px] text-slate-400 mt-1 flex justify-between items-center border-t border-slate-800 pt-1.5">
+                            <div class="text-[11px] text-slate-300 mt-2 flex justify-between items-center border-t border-slate-800/80 pt-2">
                                 <span><i class="fa-solid fa-boxes-packing text-rose-400 mr-1"></i>${item.note}</span>
-                                <button onclick="copyText('${item.address}', '이마트 주소')" class="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-300 border border-slate-700">
-                                    거점주소 복사
-                                </button>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="copyText('${item.name}', '타이틀')" class="bubbly-btn text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-xl text-violet-300 border border-slate-700 font-bold">
+                                        타이틀
+                                    </button>
+                                    <button onclick="copyText('${item.address}', '거점 주소')" class="bubbly-btn text-[10px] bg-rose-600 hover:bg-rose-500 px-2.5 py-1 rounded-xl text-white font-black shadow">
+                                        주소 복사
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -656,119 +664,130 @@
                 // 2. 최종 복귀 거점 카드
                 if (isEndHub) {
                     html += `
-                        <div class="rounded-xl p-3 bg-slate-900 border-2 border-emerald-500/80 shadow-lg mt-2">
-                            <div class="flex justify-between items-center mb-1">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-6 h-6 rounded-full bg-emerald-600 text-slate-950 font-black text-xs flex items-center justify-center shrink-0">
+                        <div class="bubbly-card p-3.5 bg-slate-900 border-2 border-emerald-500/80 shadow-lg mt-2 relative overflow-hidden">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-7 h-7 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-500 text-slate-950 font-black text-xs flex items-center justify-center shrink-0 shadow-md">
                                         착
                                     </span>
                                     <div>
-                                        <h2 class="font-bold text-sm text-white flex items-center gap-1.5">
+                                        <h2 class="font-black text-sm text-white flex items-center gap-1.5">
                                             <span>${item.name}</span>
-                                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30">최종 복귀 및 마감</span>
+                                            <span class="text-[9.5px] px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold">최종 복귀</span>
                                         </h2>
-                                        <span class="text-[10px] text-amber-300 font-mono">${item.address}</span>
+                                        <span class="text-[10px] text-amber-300 font-mono font-bold">${item.address}</span>
                                     </div>
                                 </div>
-                                <span class="font-mono text-xs font-bold text-emerald-400">${item.arrTime} 복귀 완료</span>
+                                <span class="font-mono text-xs font-black text-emerald-400 bg-emerald-950/50 px-2.5 py-1 rounded-full border border-emerald-500/30">${item.arrTime} 복귀</span>
                             </div>
-                            <div class="text-[11px] text-slate-400 mt-1 flex justify-between items-center border-t border-slate-800 pt-1.5">
+                            <div class="text-[11px] text-slate-300 mt-2 flex justify-between items-center border-t border-slate-800/80 pt-2">
                                 <span><i class="fa-solid fa-flag-checkered text-emerald-400 mr-1"></i>${item.note}</span>
-                                <span class="text-[10px] font-mono text-sky-400">서홍동에서 3.8km (7분)</span>
+                                <span class="text-[10px] font-mono font-bold text-sky-400 bg-slate-950 px-2 py-0.5 rounded-full border border-slate-800">서홍동에서 3.8km (7분)</span>
                             </div>
                         </div>
                     `;
                     return;
                 }
 
-                // 3. 일반 배송지 카드
+                // 3. 일반 배송지 카드 (동글동글 귀여운 카드 + 타이틀/주소 복사 듀오 버튼 배치)
                 html += `
-                    <div class="compact-card rounded-xl p-2.5 transition duration-150 ${
+                    <div class="bubbly-card p-3 transition duration-150 relative ${
                         isDone 
-                            ? 'bg-slate-900/40 border-l-emerald-500 border-t border-r border-b border-slate-800 opacity-60' 
+                            ? 'bg-slate-900/40 border border-emerald-500/30 opacity-60' 
                             : isBulkStop
-                                ? 'bg-slate-900 border-l-rose-500 border-t border-r border-b border-slate-800 shadow-lg ring-1 ring-rose-500/40'
+                                ? 'bg-slate-900 border-2 border-rose-500/70 shadow-lg shadow-rose-950/20'
                                 : isFinalStop
-                                    ? 'bg-slate-900 border-l-amber-500 border-t border-r border-b border-slate-800 shadow-lg'
-                                    : 'bg-slate-900 border-l-sky-500 border-t border-r border-b border-slate-800 shadow-sm'
+                                    ? 'bg-slate-900 border-2 border-amber-500/70 shadow-lg shadow-amber-950/20'
+                                    : 'bg-slate-900 border border-slate-800 shadow-md'
                     }">
-                        <!-- 라인 1: 순번, 이름, 수량, 순서이동, 도착예정, 완료버튼 -->
-                        <div class="flex justify-between items-center mb-1">
+                        <!-- 라인 1: 순번 도넛 뱃지, 배송처명, 수량, 순서이동, 도착시간, 완료버튼 -->
+                        <div class="flex justify-between items-center mb-2">
                             <div class="flex items-center gap-2 min-w-0 flex-1">
-                                <span class="w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
+                                <span class="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 shadow-sm ${
                                     isDone 
                                         ? 'bg-emerald-500 text-slate-950' 
                                         : isBulkStop 
-                                            ? 'bg-rose-500 text-white' 
-                                            : isFinalStop ? 'bg-amber-400 text-slate-950' : 'bg-sky-500 text-slate-950'
+                                            ? 'bg-gradient-to-tr from-rose-500 to-pink-500 text-white' 
+                                            : isFinalStop 
+                                                ? 'bg-gradient-to-tr from-amber-400 to-yellow-500 text-slate-950' 
+                                                : 'bg-gradient-to-tr from-sky-400 to-blue-500 text-slate-950'
                                 }">
                                     ${isDone ? '<i class="fa-solid fa-check text-[10px]"></i>' : item.displaySeq}
                                 </span>
-                                <h2 class="font-bold text-xs truncate ${isDone ? 'line-through text-slate-400' : 'text-white'}">
+                                <h2 class="font-black text-xs truncate ${isDone ? 'line-through text-slate-400' : 'text-white'}">
                                     ${titleStr}
                                 </h2>
-                                <span class="text-[10px] text-amber-400 font-mono font-bold shrink-0">(${item.boxQty})</span>
-                                ${isBulkStop ? '<span class="text-[9px] bg-rose-950 text-rose-300 px-1 rounded border border-rose-500/40 font-bold shrink-0">대량 240박스</span>' : ''}
-                                ${isFinalStop ? '<span class="text-[9px] bg-amber-950 text-amber-300 px-1 rounded border border-amber-500/40 font-bold shrink-0">최종 마감</span>' : ''}
+                                <span class="text-[10.5px] text-amber-300 font-mono font-black shrink-0">(${item.boxQty})</span>
+                                ${isBulkStop ? '<span class="text-[8.5px] bg-rose-950 text-rose-300 px-1.5 py-0.5 rounded-full border border-rose-500/40 font-black shrink-0">240박스대량</span>' : ''}
+                                ${isFinalStop ? '<span class="text-[8.5px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded-full border border-amber-500/40 font-black shrink-0">최종마감</span>' : ''}
                             </div>
 
                             <div class="flex items-center gap-1.5 shrink-0">
-                                <!-- 순서 위/아래 이동 버튼 -->
-                                <div class="flex items-center bg-slate-950 rounded-lg border border-slate-800 p-0.5">
-                                    <button onclick="moveStop('${item.id}', -1)" title="순서 위로" class="w-5 h-5 flex items-center justify-center text-[9px] text-slate-300 hover:text-white active:scale-90">
+                                <!-- 귀여운 순서 위/아래 이동 버튼 -->
+                                <div class="flex items-center bg-slate-950 rounded-full border border-slate-800 p-0.5">
+                                    <button onclick="moveStop('${item.id}', -1)" title="순서 위로" class="w-5 h-5 flex items-center justify-center text-[9px] text-slate-400 hover:text-white bubbly-btn">
                                         <i class="fa-solid fa-chevron-up"></i>
                                     </button>
-                                    <button onclick="moveStop('${item.id}', 1)" title="순서 아래로" class="w-5 h-5 flex items-center justify-center text-[9px] text-slate-300 hover:text-white active:scale-90">
+                                    <button onclick="moveStop('${item.id}', 1)" title="순서 아래로" class="w-5 h-5 flex items-center justify-center text-[9px] text-slate-400 hover:text-white bubbly-btn">
                                         <i class="fa-solid fa-chevron-down"></i>
                                     </button>
                                 </div>
 
                                 <div class="text-right">
-                                    <span class="font-mono text-xs font-bold ${isDone ? 'text-emerald-400' : 'text-sky-400'} block">
+                                    <span class="font-mono text-xs font-black ${isDone ? 'text-emerald-400' : 'text-sky-400'} block">
                                         ${isDone ? `${doneTime} 완료` : `${item.arrTime} 도착`}
                                     </span>
-                                    <span class="text-[9px] text-slate-500 font-mono block">
+                                    <span class="text-[9px] text-slate-400 font-mono block">
                                         ${item.roadKm}km (${item.driveMin}분)
                                     </span>
                                 </div>
-                                <button onclick="toggleComplete('${item.id}')" class="text-[10px] font-bold px-2 py-1 rounded-lg border transition active:scale-95 ${
+
+                                <button onclick="toggleComplete('${item.id}')" class="bubbly-btn text-[10px] font-black px-2.5 py-1.5 rounded-2xl border shadow-sm transition ${
                                     isDone 
-                                        ? 'bg-emerald-950 border-emerald-500/50 text-emerald-300' 
-                                        : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700'
+                                        ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300' 
+                                        : 'bg-gradient-to-r from-slate-800 to-slate-700 border-slate-600/80 text-slate-200 hover:text-white'
                                 }">
                                     ${isDone ? '완료됨' : '하차완료'}
                                 </button>
                             </div>
                         </div>
 
-                        <!-- 라인 2: 정제 도로명 주소 & 원터치 주소 복사 -->
-                        <div class="bg-slate-950/80 rounded-lg p-1.5 mb-1.5 flex items-center justify-between gap-1.5 border border-slate-800">
-                            <span class="text-xs font-mono font-bold text-amber-300 truncate pl-1">
-                                ${item.address}
-                            </span>
-                            <button onclick="copyText('${item.address}', '주소')" class="shrink-0 bg-sky-600 hover:bg-sky-500 active:scale-95 px-2.5 py-1 rounded-md text-xs font-bold text-white shadow flex items-center gap-1">
-                                <i class="fa-solid fa-location-arrow text-[10px]"></i>
-                                <span>주소 복사</span>
-                            </button>
+                        <!-- ★ 라인 2: 정제 도로명 주소 & [타이틀 복사] + [주소 복사] 바로 옆 나란히 배치! -->
+                        <div class="bg-slate-950/90 rounded-2xl p-2 mb-2 flex items-center justify-between gap-2 border border-slate-800/80 shadow-inner">
+                            <div class="min-w-0 flex-1 pl-1">
+                                <span class="text-[9px] font-bold text-slate-400 block">📍 정제 도로명</span>
+                                <span class="text-xs font-mono font-black text-amber-300 truncate block">
+                                    ${item.address}
+                                </span>
+                            </div>
+
+                            <!-- 타이틀 복사와 주소 복사 듀오 버튼 -->
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button onclick="copyText('${titleStr}', '타이틀')" class="bubbly-btn bg-violet-600/90 hover:bg-violet-500 px-2.5 py-1.5 rounded-xl text-[11px] font-black text-white shadow flex items-center gap-1">
+                                    <i class="fa-regular fa-copy text-[10px]"></i>
+                                    <span>타이틀</span>
+                                </button>
+                                <button onclick="copyText('${item.address}', '주소')" class="bubbly-btn bg-gradient-to-r from-sky-500 to-blue-600 hover:brightness-110 px-3 py-1.5 rounded-xl text-[11px] font-black text-white shadow-md shadow-sky-500/20 flex items-center gap-1">
+                                    <i class="fa-solid fa-location-arrow text-[10px]"></i>
+                                    <span>주소 복사</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <!-- 라인 3: 참고사항 및 퀵 액션 -->
-                        <div class="flex items-center justify-between gap-1 text-[10px]">
+                        <!-- 라인 3: 참고사항 및 1번지정 / 통화 액션 -->
+                        <div class="flex items-center justify-between gap-1 text-[10px] pt-0.5">
                             <div class="truncate text-slate-400 flex-1 pr-1">
-                                <i class="fa-solid fa-circle-info text-sky-400 mr-0.5"></i>
+                                <i class="fa-solid fa-circle-info text-sky-400 mr-1"></i>
                                 <span>${item.note}</span>
                             </div>
 
                             <div class="flex items-center gap-1 shrink-0">
-                                <button onclick="setAsFirstStop('${item.id}')" class="bg-slate-800 active:scale-95 px-1.5 py-1 rounded text-[10px] font-bold text-amber-300 border border-slate-700" title="첫 번째 하차지로 지정">
+                                <button onclick="setAsFirstStop('${item.id}')" class="bubbly-btn bg-slate-800/90 hover:bg-slate-700 px-2 py-1 rounded-xl text-[10px] font-bold text-amber-300 border border-slate-700" title="첫 번째 하차지로 지정">
                                     1번지정
                                 </button>
-                                <button onclick="copyText('${titleStr}', '타이틀')" class="bg-slate-800 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-sky-300 border border-slate-700">
-                                    타이틀
-                                </button>
                                 ${item.phone ? `
-                                    <a href="tel:${item.phone}" class="bg-emerald-700 active:scale-95 px-2 py-1 rounded text-[10px] font-bold text-white shadow flex items-center gap-0.5">
-                                        <i class="fa-solid fa-phone text-[8px]"></i>
+                                    <a href="tel:${item.phone}" class="bubbly-btn bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1 rounded-xl text-[10px] font-black text-white shadow flex items-center gap-1">
+                                        <i class="fa-solid fa-phone text-[8.5px]"></i>
                                         <span>통화</span>
                                     </a>
                                 ` : ''}
@@ -781,7 +800,7 @@
             container.innerHTML = html;
         }
 
-        // Leaflet 지도 렌더링 엔진 (실제 도로망 라우팅 엔진 탑재)
+        // --- Leaflet 지도 렌더링 엔진 ---
         function initMapIfNeeded() {
             const mapEl = document.getElementById('map');
             if (!mapEl) return;
@@ -813,7 +832,7 @@
             const currentSession = MASTER_SESSIONS[currentSessionKey];
             const waypoints = [];
 
-            // 1. 출발 거점 마커
+            // 1. 출발 거점 핀
             if (currentSession.startHub) {
                 const startPt = [currentSession.startHub.lat, currentSession.startHub.lon];
                 waypoints.push(startPt);
@@ -841,9 +860,9 @@
                 const m = L.marker(pt, {
                     icon: L.divIcon({
                         className: 'custom-pin-icon',
-                        html: `<div class="map-pin" style="background-color: ${pinColor}; width: 28px; height: 28px;">${isDone ? '✓' : item.displaySeq}</div>`,
-                        iconSize: [28, 28],
-                        iconAnchor: [14, 14]
+                        html: `<div class="map-pin" style="background-color: ${pinColor}; width: 30px; height: 30px;">${isDone ? '✓' : item.displaySeq}</div>`,
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
                     })
                 }).addTo(markersLayer);
 
@@ -852,7 +871,7 @@
                 });
             });
 
-            // 3. 복귀 거점 마커
+            // 3. 복귀 거점 핀
             if (currentSession.returnHub) {
                 const endPt = [currentSession.returnHub.lat, currentSession.returnHub.lon];
                 waypoints.push(endPt);
@@ -867,29 +886,26 @@
                 }).addTo(markersLayer);
             }
 
-            // ★ 실제 도로망(내비게이션) 경로선 비동기 수신 및 렌더링
+            // 실제 도로망 라우팅 경로선 비동기 수신 및 렌더링
             if (waypoints.length > 1) {
                 const statusIcon = document.getElementById('route-status-icon');
                 if (statusIcon) statusIcon.className = "fa-solid fa-spinner fa-spin text-amber-400 text-[10px]";
 
-                // 1단계: 임시 직선 연결 (즉각 반응용)
                 routeLine = L.polyline(waypoints, {
                     color: '#0284c7',
                     weight: 3,
                     opacity: 0.5,
-                    dashArray: '4, 4'
+                    dashArray: '5, 5'
                 }).addTo(mapInstance);
 
                 mapInstance.invalidateSize(true);
                 mapInstance.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
 
-                // 2단계: 실제 도로망 라우팅 엔진 호출 (OSRM 기반 실제 도로 굴곡선 추출)
                 try {
                     const routingResult = await fetchActualRoadRoute(waypoints);
                     if (routingResult && routingResult.roadPath && routingResult.roadPath.length > 0) {
                         actualRoutePolylineData = routingResult;
 
-                        // 기존 임시 직선 제거 후 정밀 도로 곡선 폴리라인 배치
                         if (routeLine) mapInstance.removeLayer(routeLine);
 
                         routeLine = L.polyline(routingResult.roadPath, {
@@ -901,10 +917,9 @@
 
                         mapInstance.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
 
-                        // 실제 도로 측정 거리 갱신
                         document.getElementById('summary-dist').innerText = `${routingResult.actualKm.toFixed(1)} km`;
                         if (statusIcon) statusIcon.className = "fa-solid fa-route text-emerald-400 text-[10px]";
-                        document.getElementById('live-status-text').innerHTML = `실제 도로망 <b>${routingResult.actualKm.toFixed(1)}km</b> 분석 완벽 반영됨`;
+                        document.getElementById('live-status-text').innerHTML = `실제 도로망 <b>${routingResult.actualKm.toFixed(1)}km</b> 정밀 반영됨 ✨`;
                     }
                 } catch (e) {
                     console.warn("실제 도로망 라우팅 예외, 기본 선 유지:", e);
@@ -918,6 +933,7 @@
             }
         }
 
+        // 지도 퀵 카드 업데이트 (주소 복사 바로 옆에 타이틀 복사 나란히!)
         function updateMapQuickCard(item) {
             const isDone = !!completedMap[item.id];
             const titleStr = `${item.displaySeq} ${item.name}`;
@@ -938,6 +954,7 @@
             }
         }
 
+        // --- 순서 변경 및 거점 제어 로직 ---
         function moveStop(stopId, direction) {
             const curIdx = currentStops.findIndex(s => s.id === stopId);
             if (curIdx === -1) return;
@@ -1008,13 +1025,13 @@
             const cMap = document.getElementById('container-map');
 
             if (viewKey === 'list') {
-                btnList.className = "py-1 px-2 rounded text-[11px] font-bold transition bg-sky-600 text-white flex items-center gap-1";
-                btnMap.className = "py-1 px-2 rounded text-[11px] font-bold transition text-slate-400 hover:text-white flex items-center gap-1";
+                btnList.className = "py-1 px-2.5 rounded-full text-[11px] font-bold transition bg-gradient-to-r from-sky-500 to-blue-600 text-white flex items-center gap-1 shadow";
+                btnMap.className = "py-1 px-2.5 rounded-full text-[11px] font-bold transition text-slate-400 hover:text-white flex items-center gap-1";
                 cList.classList.remove('hidden');
                 cMap.classList.add('hidden');
             } else {
-                btnMap.className = "py-1 px-2 rounded text-[11px] font-bold transition bg-sky-600 text-white flex items-center gap-1";
-                btnList.className = "py-1 px-2 rounded text-[11px] font-bold transition text-slate-400 hover:text-white flex items-center gap-1";
+                btnMap.className = "py-1 px-2.5 rounded-full text-[11px] font-bold transition bg-gradient-to-r from-sky-500 to-blue-600 text-white flex items-center gap-1 shadow";
+                btnList.className = "py-1 px-2.5 rounded-full text-[11px] font-bold transition text-slate-400 hover:text-white flex items-center gap-1";
                 cList.classList.add('hidden');
                 cMap.classList.remove('hidden');
 
@@ -1030,6 +1047,59 @@
             if (currentView === 'map') {
                 renderMap();
             }
+        }
+
+        // --- 커스텀 확인 모달 제어 (confirm 대체) ---
+        function openConfirmModal(type) {
+            const modal = document.getElementById('modal-confirm');
+            const titleEl = document.getElementById('confirm-modal-title');
+            const descEl = document.getElementById('confirm-modal-desc');
+            const iconEl = document.getElementById('confirm-modal-icon');
+            const actionBtn = document.getElementById('confirm-modal-action-btn');
+
+            if (type === 'completed') {
+                const validStops = currentStops.filter(s => !s.isStartPoint && !s.isEndPoint);
+                const doneCount = validStops.filter(s => !!completedMap[s.id]).length;
+                if (doneCount === 0) {
+                    showToast("초기화할 하차 완료 기록이 없습니다.");
+                    return;
+                }
+                titleEl.innerText = "하차 완료 초기화";
+                descEl.innerText = `현재 회차의 하차 완료 기록(${doneCount}건)을 모두 초기화하시겠습니까?`;
+                iconEl.innerText = "🔄";
+                actionBtn.className = "bubbly-btn py-2 bg-rose-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-rose-600/25";
+                actionBtn.innerText = "초기화 실행";
+
+                confirmActionHandler = () => {
+                    completedMap = {};
+                    completedTimestampMap = {};
+                    saveSessionState();
+                    renderAll();
+                    showToast("하차 완료 기록이 초기화되었습니다.");
+                };
+            } else if (type === 'order') {
+                titleEl.innerText = "순서 원복";
+                descEl.innerText = "배송지 순서를 원래 기본 추천 경로로 복원하시겠습니까?";
+                iconEl.innerText = "↩️";
+                actionBtn.className = "bubbly-btn py-2 bg-sky-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-sky-600/25";
+                actionBtn.innerText = "원복 실행";
+
+                confirmActionHandler = () => {
+                    resetOriginalOrder();
+                };
+            }
+
+            actionBtn.onclick = () => {
+                if (confirmActionHandler) confirmActionHandler();
+                closeConfirmModal();
+            };
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('modal-confirm').classList.add('hidden');
+            confirmActionHandler = null;
         }
 
         function openTimeAdjustModal() {
@@ -1052,6 +1122,7 @@
             }
         }
 
+        // 클립보드 복사 유틸리티 (iFrame 샌드박스 완벽 대응)
         function copyText(text, label) {
             const ta = document.createElement('textarea');
             ta.value = text;
@@ -1096,10 +1167,12 @@
             const toast = document.getElementById('toast');
             const toastText = document.getElementById('toast-text');
             toastText.innerText = msg;
-            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.remove('opacity-0', 'pointer-events-none', 'scale-90');
+            toast.classList.add('scale-100');
             setTimeout(() => {
-                toast.classList.add('opacity-0', 'pointer-events-none');
-            }, 1900);
+                toast.classList.add('opacity-0', 'pointer-events-none', 'scale-90');
+                toast.classList.remove('scale-100');
+            }, 1800);
         }
 
         window.addEventListener('resize', () => {
@@ -1108,7 +1181,7 @@
             }
         });
 
-        // 앱 최초 구동
+        // 앱 초기 구동
         window.addEventListener('DOMContentLoaded', () => {
             let initialSession = "18_pm";
             try {
