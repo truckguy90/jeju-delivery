@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>제주 배송 내비 원터치 & 실시간 스케줄러</title>
+    <title>제주 배송 실시간 도로망 스케줄러</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icon CDN -->
@@ -74,16 +74,18 @@
 
     <!-- 상단 고정 헤더 -->
     <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 px-3 py-2 shadow-xl shrink-0">
-        <!-- 1행: 타이틀 및 핵심 조작 버튼 (자동 저장 상태 표시) -->
+        <!-- 1행: 타이틀 및 핵심 조작 버튼 (자동 저장 및 도로망 연동 상태 표시) -->
         <div class="max-w-md mx-auto flex justify-between items-center mb-1.5">
             <div>
-                <span class="text-[10px] font-bold text-sky-400 tracking-wider uppercase flex items-center gap-1">
-                    <span>카카오내비 전용 연동</span>
-                    <span class="text-emerald-400 font-mono text-[9px]"><i class="fa-solid fa-floppy-disk"></i> 자동저장 활성</span>
+                <span class="text-[10px] font-bold text-sky-400 tracking-wider uppercase flex items-center gap-1.5">
+                    <span id="routing-engine-badge" class="text-emerald-400 font-mono text-[9px] flex items-center gap-1">
+                        <i class="fa-solid fa-route"></i> 실제 도로망 내비 연동
+                    </span>
+                    <span class="text-slate-500 font-mono text-[9px]">• 로컬 자동저장</span>
                 </span>
                 <h1 class="text-sm font-black text-white flex items-center gap-1.5">
                     <i class="fa-solid fa-truck-ramp-box text-sky-400"></i>
-                    제주 배송 실시간 스케줄러
+                    제주 배송 실시간 도로 스케줄러
                 </h1>
             </div>
             <div class="flex items-center gap-1">
@@ -140,8 +142,8 @@
         <!-- 3행: 실시간 재계산 지표 카드 -->
         <div class="max-w-md mx-auto bg-slate-950/90 border border-slate-800 rounded-xl p-1.5 grid grid-cols-4 gap-1 text-center text-xs">
             <div>
-                <span class="text-[9px] text-slate-400 block font-medium">총 주행거리</span>
-                <strong id="summary-dist" class="text-sky-400 font-mono font-bold text-xs">37.1 km</strong>
+                <span class="text-[9px] text-slate-400 block font-medium">실제 도로주행</span>
+                <strong id="summary-dist" class="text-sky-400 font-mono font-bold text-xs">계산 중...</strong>
             </div>
             <div class="border-l border-slate-800">
                 <span class="text-[9px] text-slate-400 block font-medium">총 물량</span>
@@ -152,7 +154,7 @@
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span>예상 마감</span>
                 </span>
-                <strong id="summary-finish" class="text-emerald-400 font-mono font-bold text-xs">16:08</strong>
+                <strong id="summary-finish" class="text-emerald-400 font-mono font-bold text-xs">계산 중...</strong>
             </div>
             <div class="border-l border-slate-800">
                 <span class="text-[9px] text-slate-400 block font-medium">하차 완료</span>
@@ -160,11 +162,11 @@
             </div>
         </div>
 
-        <!-- 4행: 실시간 상태 알림 배너 & 뷰 모드 스위치 -->
+        <!-- 4행: 실시간 도로 상태 알림 배너 & 뷰 모드 스위치 -->
         <div class="max-w-md mx-auto mt-1.5 flex items-center justify-between gap-1.5">
             <div id="live-status-chip" class="flex-1 bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-lg text-[10px] text-slate-300 truncate flex items-center gap-1.5">
-                <i class="fa-solid fa-clock-rotate-left text-sky-400 text-[10px]"></i>
-                <span id="live-status-text">14:00 출발 기준 타임라인 산출 중</span>
+                <i id="route-status-icon" class="fa-solid fa-road text-sky-400 text-[10px]"></i>
+                <span id="live-status-text">실제 도로망 기반 주행 동선 분석 중...</span>
             </div>
             <div class="grid grid-cols-2 gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
                 <button onclick="switchView('list')" id="view-btn-list" class="py-1 px-2 rounded text-[11px] font-bold transition bg-sky-600 text-white flex items-center gap-1">
@@ -192,7 +194,7 @@
             <!-- JS 동적 렌더링 -->
         </div>
 
-        <!-- 2. 인터랙티브 지도 뷰 -->
+        <!-- 2. 인터랙티브 지도 뷰 (실제 도로 곡선 경로선 렌더링) -->
         <div id="container-map" class="w-full h-full relative hidden flex-1">
             <div id="map"></div>
             <!-- 지도 퀵 카드 -->
@@ -253,9 +255,9 @@
         // 거점 정보
         const HUB_EMART = { name: "이마트 서귀포점", address: "서귀포시 일주동로 9209", lat: 33.2471, lon: 126.5098, phone: "064-797-1234" };
 
-        // 마스터 세션 데이터 (18일 오후 기본 탑재)
+        // 마스터 세션 데이터
         const MASTER_SESSIONS = {
-            // [당일 신규] 18일 오후 (탐라모터스 대량 / 시에나CC 마감)
+            // 18일 오후
             "18_pm": {
                 name: "18일 오후 (탐라모터스 / 시에나CC 마감)",
                 isMorning: false,
@@ -270,7 +272,7 @@
                     { id: "18pm_5", name: "더 시에나 CC", address: "제주시 516로 2695", phone: "010-4177-6054", boxQty: "77박스", note: "★ 최종 운행 마감! 516도로 직통 북상 (대상 청정원 종합17호 77박스)", lat: 33.4342, lon: 126.5658, roadKm: 23.5, driveMin: 34, customUnload: 15 }
                 ]
             },
-            // [당일 오전] 18일 오전
+            // 18일 오전
             "18_am": {
                 name: "18일 오전 (시에나 1번 / 이마트 복귀)",
                 isMorning: true,
@@ -287,7 +289,7 @@
                     { id: "18am_hub_end", isEndPoint: true, name: "이마트 서귀포점 (복귀)", address: "서귀포시 일주동로 9209", phone: "064-797-1234", boxQty: "복귀 마감", note: "서홍동에서 3.8km 직진 복귀 (오전 운행 완벽 종료)", lat: 33.2471, lon: 126.5098, roadKm: 3.8, driveMin: 7 }
                 ]
             },
-            // [보관함] 17일 오후
+            // 17일 오후
             "17_pm": {
                 name: "17일 오후 (애월 마무리)",
                 isMorning: false,
@@ -303,7 +305,7 @@
                     { id: "17pm_7", name: "허영하", address: "제주시 애월읍 중산간서로 6132", phone: "010-6672-2238", boxQty: "45박스", note: "장전스카이빌 102호 (CJ 복합 A호 / 최종 마감)", lat: 33.4542, lon: 126.3925, roadKm: 7.8, driveMin: 12 }
                 ]
             },
-            // [보관함] 17일 오전
+            // 17일 오전
             "17_am": {
                 name: "17일 오전 (이마트 출발/복귀)",
                 isMorning: true,
@@ -320,7 +322,7 @@
                     { id: "17am_7", name: "국민냉열", address: "서귀포시 남원읍 하례로 192", phone: "010-8723-2895", boxQty: "10박스", note: "동원 프리미엄60호 (하례리 하례로변 사업장)", lat: 33.2770, lon: 126.6345, roadKm: 4.2, driveMin: 7 }
                 ]
             },
-            // [보관함] 16일 오후
+            // 16일 오후
             "16_pm": {
                 name: "16일 오후 (스프링데일/번영로)",
                 isMorning: false,
@@ -337,7 +339,7 @@
                     { id: "16pm_8", name: "번영로 528", address: "제주시 번영로 528", phone: "", boxQty: "마감", note: "제주봉개LH아파트 일원 (최종 운행 마감)", lat: 33.4988, lon: 126.6022, roadKm: 21.0, driveMin: 32 }
                 ]
             },
-            // [보관함] 16일 오전
+            // 16일 오전
             "16_am": {
                 name: "16일 오전 (대정 우선/이마트)",
                 isMorning: true,
@@ -367,7 +369,11 @@
         let markersLayer = null;
         let routeLine = null;
 
-        // --- 로컬 스토리지 자동 저장 및 복원 엔진 (새로고침 초기화 방지) ---
+        // 도로망 라우팅 캐시 및 실제 도로 정보
+        let actualRoutePolylineData = null;
+        let isRoutingLoading = false;
+
+        // --- 로컬 스토리지 자동 저장 및 복원 엔진 ---
         function saveSessionState() {
             try {
                 localStorage.setItem("jeju_delivery_active_session", currentSessionKey);
@@ -387,15 +393,12 @@
             if (!sessionData) return;
 
             try {
-                // 1. 하차 완료 맵 복원
                 const savedCompleted = localStorage.getItem(`jeju_completed_${sessionKey}`);
                 completedMap = savedCompleted ? JSON.parse(savedCompleted) : {};
 
-                // 2. 하차 완료 타임스탬프 복원
                 const savedTimestamps = localStorage.getItem(`jeju_timestamps_${sessionKey}`);
                 completedTimestampMap = savedTimestamps ? JSON.parse(savedTimestamps) : {};
 
-                // 3. 재배열된 배송지 순서 복원
                 const savedStops = localStorage.getItem(`jeju_stops_${sessionKey}`);
                 if (savedStops) {
                     currentStops = JSON.parse(savedStops);
@@ -403,11 +406,9 @@
                     currentStops = JSON.parse(JSON.stringify(sessionData.stops));
                 }
 
-                // 4. 출발 기준 시간 복원
                 const savedStart = localStorage.getItem(`jeju_starttime_${sessionKey}`);
                 sessionStartTimeStr = savedStart || sessionData.defaultStartTime;
 
-                // 5. 기본 하차 소요 시간 복원
                 const savedUnload = localStorage.getItem(`jeju_unload_${sessionKey}`);
                 fixedUnloadMin = savedUnload ? parseInt(savedUnload, 10) : 15;
             } catch (err) {
@@ -419,7 +420,6 @@
                 fixedUnloadMin = 15;
             }
 
-            // UI 폼 동기화
             const selEl = document.getElementById('session-selector');
             if (selEl) selEl.value = sessionKey;
 
@@ -428,6 +428,9 @@
 
             const inputStartEl = document.getElementById('input-session-start');
             if (inputStartEl) inputStartEl.value = sessionStartTimeStr;
+
+            // 세션 전환 시 라우팅 캐시 초기화
+            actualRoutePolylineData = null;
         }
 
         function parseTimeToMinutes(tStr) {
@@ -445,6 +448,43 @@
         function getCurrentTimeStr() {
             const now = new Date();
             return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        }
+
+        // --- ★ 핵심 기능: 실제 도로망 내비게이션 라우팅 엔진 (OSRM API) ---
+        async function fetchActualRoadRoute(waypoints) {
+            // waypoints: [[lat, lon], [lat, lon], ...]
+            if (waypoints.length < 2) return null;
+
+            // OSRM 좌표 형식: {lon},{lat};{lon},{lat}...
+            const coordsParam = waypoints.map(pt => `${pt[1].toFixed(5)},${pt[0].toFixed(5)}`).join(';');
+            const url = `https://router.project-osrm.org/route/v1/driving/${coordsParam}?overview=full&geometries=geojson&steps=false`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("OSRM API response not ok");
+                const data = await response.json();
+
+                if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    // GeoJSON coordinates는 [lon, lat] 형태이므로 Leaflet용 [lat, lon]으로 변환
+                    const roadPath = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                    const actualKm = route.distance / 1000;
+                    const rawDriveMin = Math.round(route.duration / 60);
+
+                    // 1톤 화물탑차 도로 계수(K_road * K_cargo ≈ 1.15) 보정
+                    const adjustedDriveMin = Math.round(rawDriveMin * 1.15);
+
+                    return {
+                        roadPath,
+                        actualKm,
+                        adjustedDriveMin,
+                        rawDriveMin
+                    };
+                }
+            } catch (err) {
+                console.warn("실제 도로 라우팅 API 호출 실패 (오프라인/제한), 실측 데이터 대체:", err);
+            }
+            return null;
         }
 
         // 실시간 일정 재계산 엔진
@@ -505,15 +545,21 @@
 
             const finishTimeStr = formatMinutesToTime(runningMinutes);
 
-            document.getElementById('summary-dist').innerText = `${totalKm.toFixed(1)} km`;
+            // 실제 도로 라우팅이 완료되어 있으면 그 거리로 표기
+            if (actualRoutePolylineData && actualRoutePolylineData.actualKm) {
+                document.getElementById('summary-dist').innerText = `${actualRoutePolylineData.actualKm.toFixed(1)} km`;
+            } else {
+                document.getElementById('summary-dist').innerText = `${totalKm.toFixed(1)} km`;
+            }
+
             document.getElementById('summary-qty').innerText = `${totalBoxes} 박스`;
             document.getElementById('summary-finish').innerText = finishTimeStr;
 
             const statusTextEl = document.getElementById('live-status-text');
             if (lastCompletedStopName && lastCompletedTime) {
-                statusTextEl.innerHTML = `<b class="text-emerald-400">[${lastCompletedStopName}]</b> ${lastCompletedTime} 완료 기준 실시간 재산출됨 (저장됨)`;
+                statusTextEl.innerHTML = `<b class="text-emerald-400">[${lastCompletedStopName}]</b> ${lastCompletedTime} 완료 기준 실시간 재산출됨`;
             } else {
-                statusTextEl.innerText = `${sessionStartTimeStr} 출발 기준 타임라인 산출 중 (자동 저장 활성)`;
+                statusTextEl.innerText = `${sessionStartTimeStr} 출발 기준 실제 도로 타임라인 산출 중`;
             }
 
             updateProgressStat();
@@ -577,7 +623,7 @@
                 const isFinalStop = index === currentStops.length - 1 && !isEndHub;
                 const titleStr = (isStartHub || isEndHub) ? item.name : `${item.displaySeq} ${item.name}`;
 
-                // 1. 출발 거점 카드 (이마트 서귀포점)
+                // 1. 출발 거점 카드
                 if (isStartHub) {
                     html += `
                         <div class="rounded-xl p-3 bg-slate-900 border-2 border-rose-500/80 shadow-lg mb-2">
@@ -607,7 +653,7 @@
                     return;
                 }
 
-                // 2. 최종 복귀 거점 카드 (있을 경우)
+                // 2. 최종 복귀 거점 카드
                 if (isEndHub) {
                     html += `
                         <div class="rounded-xl p-3 bg-slate-900 border-2 border-emerald-500/80 shadow-lg mt-2">
@@ -706,7 +752,7 @@
                             </button>
                         </div>
 
-                        <!-- 라인 3: 참고사항 및 퀵 액션 (1번지정, 타이틀 복사, 통화) -->
+                        <!-- 라인 3: 참고사항 및 퀵 액션 -->
                         <div class="flex items-center justify-between gap-1 text-[10px]">
                             <div class="truncate text-slate-400 flex-1 pr-1">
                                 <i class="fa-solid fa-circle-info text-sky-400 mr-0.5"></i>
@@ -735,7 +781,7 @@
             container.innerHTML = html;
         }
 
-        // Leaflet 지도 렌더링 엔진
+        // Leaflet 지도 렌더링 엔진 (실제 도로망 라우팅 엔진 탑재)
         function initMapIfNeeded() {
             const mapEl = document.getElementById('map');
             if (!mapEl) return;
@@ -754,7 +800,7 @@
             }
         }
 
-        function renderMap() {
+        async function renderMap() {
             initMapIfNeeded();
             if (!mapInstance || !markersLayer) return;
 
@@ -765,12 +811,12 @@
             }
 
             const currentSession = MASTER_SESSIONS[currentSessionKey];
-            const latlngs = [];
+            const waypoints = [];
 
-            // 1. 출발 거점 마커 (이마트 서귀포점)
+            // 1. 출발 거점 마커
             if (currentSession.startHub) {
                 const startPt = [currentSession.startHub.lat, currentSession.startHub.lon];
-                latlngs.push(startPt);
+                waypoints.push(startPt);
 
                 L.marker(startPt, {
                     icon: L.divIcon({
@@ -786,7 +832,7 @@
             currentStops.forEach((item) => {
                 if (item.isStartPoint || item.isEndPoint) return;
                 const pt = [item.lat, item.lon];
-                latlngs.push(pt);
+                waypoints.push(pt);
 
                 const isDone = !!completedMap[item.id];
                 const isBulk = item.boxQty && item.boxQty.includes("240");
@@ -806,10 +852,10 @@
                 });
             });
 
-            // 3. 복귀 거점 마커 (있을 경우)
+            // 3. 복귀 거점 마커
             if (currentSession.returnHub) {
                 const endPt = [currentSession.returnHub.lat, currentSession.returnHub.lon];
-                latlngs.push(endPt);
+                waypoints.push(endPt);
 
                 L.marker(endPt, {
                     icon: L.divIcon({
@@ -821,21 +867,49 @@
                 }).addTo(markersLayer);
             }
 
-            // 경로선 연결
-            if (latlngs.length > 1) {
-                routeLine = L.polyline(latlngs, {
-                    color: '#38bdf8',
-                    weight: 4,
-                    opacity: 0.85,
-                    dashArray: '6, 6'
+            // ★ 실제 도로망(내비게이션) 경로선 비동기 수신 및 렌더링
+            if (waypoints.length > 1) {
+                const statusIcon = document.getElementById('route-status-icon');
+                if (statusIcon) statusIcon.className = "fa-solid fa-spinner fa-spin text-amber-400 text-[10px]";
+
+                // 1단계: 임시 직선 연결 (즉각 반응용)
+                routeLine = L.polyline(waypoints, {
+                    color: '#0284c7',
+                    weight: 3,
+                    opacity: 0.5,
+                    dashArray: '4, 4'
                 }).addTo(mapInstance);
 
-                setTimeout(() => {
-                    if (mapInstance && routeLine) {
-                        mapInstance.invalidateSize(true);
+                mapInstance.invalidateSize(true);
+                mapInstance.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+
+                // 2단계: 실제 도로망 라우팅 엔진 호출 (OSRM 기반 실제 도로 굴곡선 추출)
+                try {
+                    const routingResult = await fetchActualRoadRoute(waypoints);
+                    if (routingResult && routingResult.roadPath && routingResult.roadPath.length > 0) {
+                        actualRoutePolylineData = routingResult;
+
+                        // 기존 임시 직선 제거 후 정밀 도로 곡선 폴리라인 배치
+                        if (routeLine) mapInstance.removeLayer(routeLine);
+
+                        routeLine = L.polyline(routingResult.roadPath, {
+                            color: '#38bdf8',
+                            weight: 5,
+                            opacity: 0.9,
+                            lineJoin: 'round'
+                        }).addTo(mapInstance);
+
                         mapInstance.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+
+                        // 실제 도로 측정 거리 갱신
+                        document.getElementById('summary-dist').innerText = `${routingResult.actualKm.toFixed(1)} km`;
+                        if (statusIcon) statusIcon.className = "fa-solid fa-route text-emerald-400 text-[10px]";
+                        document.getElementById('live-status-text').innerHTML = `실제 도로망 <b>${routingResult.actualKm.toFixed(1)}km</b> 분석 완벽 반영됨`;
                     }
-                }, 100);
+                } catch (e) {
+                    console.warn("실제 도로망 라우팅 예외, 기본 선 유지:", e);
+                    if (statusIcon) statusIcon.className = "fa-solid fa-road text-sky-400 text-[10px]";
+                }
             }
 
             const firstDeliverable = currentStops.find(s => !s.isStartPoint && !s.isEndPoint);
@@ -906,6 +980,7 @@
         function resetOriginalOrder() {
             const sessionData = MASTER_SESSIONS[currentSessionKey];
             currentStops = JSON.parse(JSON.stringify(sessionData.stops));
+            actualRoutePolylineData = null;
             saveSessionState();
             renderAll();
             showToast(`배송 순서가 기본 계획으로 복원되었습니다.`);
@@ -1033,7 +1108,7 @@
             }
         });
 
-        // 앱 최초 기동 (저장된 세션 및 하차 완료 기록 자동 복원)
+        // 앱 최초 구동
         window.addEventListener('DOMContentLoaded', () => {
             let initialSession = "18_pm";
             try {
@@ -1049,4 +1124,3 @@
     </script>
 </body>
 </html>
-
